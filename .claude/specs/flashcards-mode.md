@@ -29,7 +29,7 @@ Simplest mode. Browse all cards, flip to reveal, no scoring pressure.
 | Star card | Star icon button on card |
 
 ## Shuffle Toggle
-- Button: 🔀 Shuffle (active state: indigo bg)
+- Button: 🔀 Shuffle (active state: `bg-violet-900/20`, outline `border border-[rgba(167,139,250,0.3)] text-[#a78bfa]`)
 - When toggled ON: re-run shuffle(), reset to index 0, flip any flipped card back to front
 - When toggled OFF: restore original order, reset to index 0
 

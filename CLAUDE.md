@@ -130,8 +130,9 @@ No API calls, no auth, no server. If it can't be done in localStorage, it's out 
 - **Smallest change that works.** Targeted edits over full rewrites.
 - **No new npm packages without asking first.** The installed packages are sufficient.
 - **Node v20 LTS only** — `nvm use 20` before running anything
-- **Tailwind only** — no CSS modules, no styled-components, no inline style objects
-- **Dark mode is the default** — bg-zinc-900/slate-900, text-white. No light mode toggle needed.
+- **Tailwind + CSS custom properties** — the design system lives in `src/index.css` (CSS vars + `.glass-card` / `.ff-heading` utility classes). Use these before reaching for arbitrary Tailwind values.
+- **Fonts via index.css** — Syne (headings) and DM Sans (body) are loaded via a Google Fonts `@import` at the top of `src/index.css`. Do NOT add font links to `index.html`.
+- **Dark mode is the default** — base background is `#08070f` (`--bg-base`), accent is violet (`#7c3aed`). No light mode toggle needed.
 - `crypto.randomUUID()` for all IDs — no uuid package needed
 - React Router v6 patterns only (`useParams`, `useNavigate`, `<Outlet>`)
 

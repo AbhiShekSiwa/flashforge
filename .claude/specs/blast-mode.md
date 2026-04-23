@@ -15,7 +15,7 @@ Fast-paced lives-based quiz game. Answer before time runs out. High score tracki
   - 🟢 Easy — 8 seconds per card
   - 🟡 Medium — 5 seconds per card  
   - 🔴 Hard — 3 seconds per card
-- "Start Blast" button (large, indigo)
+- "Start Blast" button (large, `bg-violet-600 hover:bg-violet-500 text-white rounded-xl`)
 
 ## Game State
 ```js

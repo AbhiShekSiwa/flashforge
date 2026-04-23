@@ -13,7 +13,7 @@ Controls:
 - Question types: three checkboxes: [x] Multiple Choice [x] True/False [x] Short Answer
   At least one must be checked (disable submit if all unchecked)
 - Direction: radio buttons: "Term → Definition" | "Definition → Term" | "Mixed"
-- "Start Test" button (indigo, large)
+- "Start Test" button (large, `bg-violet-600 hover:bg-violet-500 text-white rounded-xl`)
 
 ## Test Generation
 On "Start Test":
@@ -47,7 +47,7 @@ On "Start Test":
 
 ## Taking the Test UI
 - All questions displayed in a single scrollable page
-- Each question: numbered card (1., 2., 3...) with `bg-zinc-800 rounded-xl p-4`
+- Each question: numbered card (1., 2., 3...) using `.glass-card p-4`
 - Question type label shown small above each question (MC / T/F / Short Answer)
 - Sticky bottom bar: answered count "12 / 20 answered" + "Submit Test" button
 - Submit button: disabled until all questions have an answer

@@ -16,10 +16,10 @@ Click-to-match pairs. Terms on left, definitions on right. Timed.
 
 ## Tile States
 Each tile has one of these states:
-- default: `bg-zinc-800 border border-zinc-700 text-zinc-100`
-- selected: `bg-zinc-800 border-2 border-indigo-500 text-white`
-- matched: `bg-green-900/40 border border-green-600 text-green-300 opacity-50`
-- wrong: `bg-red-900/40 border border-red-500` (for 600ms then back to default)
+- default: `.glass-card text-white` (uses design system glass surface)
+- selected: `.glass-card border-2 border-[#7c3aed] text-white` (violet accent border)
+- matched: `bg-emerald-900/30 border border-emerald-500/20 text-emerald-400 opacity-50`
+- wrong: `bg-red-900/40 border border-red-500 text-red-300` (for 600ms then back to default)
 
 ## Interaction Flow
 1. User clicks a term tile → it becomes "selected" (left selection)
