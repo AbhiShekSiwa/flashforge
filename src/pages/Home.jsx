@@ -3,11 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { useSets } from '../hooks/useSets.js'
 import SetCard from '../components/SetCard.jsx'
 import ConfirmModal from '../components/ConfirmModal.jsx'
+import { getSetProgress } from '../utils/spacedRepetition.js'
 
 export default function Home() {
   const { sets, deleteSet } = useSets()
   const navigate = useNavigate()
   const [pendingDelete, setPendingDelete] = useState(null)
+
+  // Sort by lastStudied descending (never-studied sets go last)
+  const sortedSets = [...sets].sort((a, b) => {
+    if (!a.lastStudied && !b.lastStudied) return 0
+    if (!a.lastStudied) return 1
+    if (!b.lastStudied) return -1
+    return new Date(b.lastStudied) - new Date(a.lastStudied)
+  })
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-8">
@@ -21,7 +30,7 @@ export default function Home() {
         </button>
       </div>
 
-      {sets.length === 0 ? (
+      {sortedSets.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <p className="text-4xl mb-4 select-none">📚</p>
           <h2 className="text-xl font-semibold text-zinc-300 mb-2">No sets yet</h2>
@@ -37,10 +46,11 @@ export default function Home() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {sets.map(set => (
+          {sortedSets.map(set => (
             <SetCard
               key={set.id}
               set={set}
+              progress={getSetProgress(set)}
               onDelete={id => setPendingDelete(id)}
             />
           ))}
