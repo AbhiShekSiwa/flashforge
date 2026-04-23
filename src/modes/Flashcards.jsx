@@ -16,6 +16,7 @@ export default function Flashcards() {
   const [isShuffled, setIsShuffled] = useState(true)
   const [displayOrder, setDisplayOrder] = useState(() => shuffle(indexed))
   const [currentPos, setCurrentPos] = useState(0)
+  const [isFlipped, setIsFlipped] = useState(false)
   const [starred, setStarred] = useState(new Set())
   const [done, setDone] = useState(false)
 
@@ -24,7 +25,12 @@ export default function Flashcards() {
   const currentItem = displayOrder[currentPos]
   const isStarred = currentItem ? starred.has(currentItem.idx) : false
 
+  const handleFlip = useCallback(() => {
+    setIsFlipped(f => !f)
+  }, [])
+
   const goNext = useCallback(() => {
+    setIsFlipped(false)
     if (isLast) {
       setDone(true)
       markStudied(id)
@@ -34,18 +40,23 @@ export default function Flashcards() {
   }, [isLast, markStudied, id])
 
   const goPrev = useCallback(() => {
+    setIsFlipped(false)
     setCurrentPos(p => Math.max(0, p - 1))
   }, [])
 
+  // Feature 4: keyboard shortcuts — Space/→ next, ← prev, F flip
+  // READ: done, goNext, goPrev, handleFlip; SET: nothing directly (via callbacks)
   useEffect(() => {
     if (done) return
     function onKey(e) {
-      if (e.code === 'ArrowRight') goNext()
-      else if (e.code === 'ArrowLeft') goPrev()
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      if (e.code === 'Space' || e.code === 'ArrowRight') { e.preventDefault(); goNext() }
+      else if (e.code === 'ArrowLeft') { e.preventDefault(); goPrev() }
+      else if (e.key === 'f' || e.key === 'F') handleFlip()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [done, goNext, goPrev])
+  }, [done, goNext, goPrev, handleFlip])
 
   function toggleShuffle() {
     if (isShuffled) {
@@ -56,6 +67,7 @@ export default function Flashcards() {
       setIsShuffled(true)
     }
     setCurrentPos(0)
+    setIsFlipped(false)
   }
 
   function toggleStar() {
@@ -71,6 +83,7 @@ export default function Flashcards() {
 
   function studyAgain() {
     setCurrentPos(0)
+    setIsFlipped(false)
     setDone(false)
   }
 
@@ -78,6 +91,7 @@ export default function Flashcards() {
     setDisplayOrder(shuffle(indexed))
     setIsShuffled(true)
     setCurrentPos(0)
+    setIsFlipped(false)
     setDone(false)
   }
 
@@ -145,7 +159,7 @@ export default function Flashcards() {
           </span>
           <button
             onClick={toggleShuffle}
-            className={`h-8 px-3 rounded-lg text-sm font-medium transition-colors border border-[rgba(96,165,250,0.3)] text-[#60a5fa] text-sm px-3 py-1.5 rounded-lg hover:bg-blue-900/20 ${
+            className={`h-8 px-3 rounded-lg text-sm font-medium transition-colors border border-[rgba(96,165,250,0.3)] text-[#60a5fa] hover:bg-blue-900/20 ${
               isShuffled ? 'bg-blue-900/20' : ''
             }`}
           >
@@ -161,9 +175,10 @@ export default function Flashcards() {
           }`}
         >
           <FlipCard
-            key={currentPos}
             front={currentItem.card.term}
             back={currentItem.card.definition}
+            flipped={isFlipped}
+            onFlip={handleFlip}
           />
         </div>
 
@@ -192,6 +207,13 @@ export default function Flashcards() {
           </button>
         </div>
       </main>
+
+      {/* Feature 4: keyboard hint bar */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-4 text-xs text-blue-400/40 bg-black/20 backdrop-blur-sm px-4 py-2 rounded-full border border-blue-500/10 pointer-events-none">
+        <span>Space / → Next</span>
+        <span>← Prev</span>
+        <span>F Flip</span>
+      </div>
     </div>
   )
 }

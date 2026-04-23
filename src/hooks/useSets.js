@@ -51,5 +51,9 @@ export function useSets() {
     )
   }
 
-  return { sets, addSet, deleteSet, updateSrData, markStudied }
+  function renameSet(id, name) {
+    setSets(prev => prev.map(s => (s.id === id ? { ...s, name } : s)))
+  }
+
+  return { sets, addSet, deleteSet, updateSrData, markStudied, renameSet }
 }

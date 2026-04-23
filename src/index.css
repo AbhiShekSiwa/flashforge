@@ -42,3 +42,14 @@ body {
 .card-inner.flipped { transform: rotateY(180deg); }
 .card-face { backface-visibility: hidden; }
 .card-back { transform: rotateY(180deg); }
+
+@keyframes streakPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(251,146,60,0.4); }
+  50% { box-shadow: 0 0 20px rgba(251,146,60,0.8); }
+}
+
+.streak-glow {
+  animation: streakPulse 1.2s ease-in-out infinite;
+  border-radius: 6px;
+  padding: 2px 4px;
+}

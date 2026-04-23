@@ -17,7 +17,6 @@ export default function Learn() {
     starredOnly: false,
   })
 
-  // Drawer state
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Core session state
@@ -33,11 +32,14 @@ export default function Learn() {
   const [typedAnswer, setTypedAnswer] = useState('')
   const [showAnswer, setShowAnswer] = useState(false)
 
-  // Enhancement 4 — session-wide consecutive correct streak
+  // Feature 1: wrong cards this round
+  const [wrongThisRound, setWrongThisRound] = useState([])
+
+  // Feature 2: session streak (already existed — keeping same var name)
   const [sessionStreak, setSessionStreak] = useState(0)
   const [showStreakBurst, setShowStreakBurst] = useState(false)
 
-  // Enhancement 5 — starred cards (localStorage exception per spec)
+  // Starred cards (localStorage exception per spec)
   const [starredCards, setStarredCards] = useState(() => {
     try {
       const raw = localStorage.getItem('flashforge_starred')
@@ -46,16 +48,14 @@ export default function Learn() {
     } catch { return [] }
   })
 
-  // Enhancement 6 — skip badge
   const [showSkipBadge, setShowSkipBadge] = useState(false)
 
-  // Enhancement 7 — toggleable progress bar
   const [progressMode, setProgressMode] = useState(() => {
     return localStorage.getItem('flashforge_progress_pref') || 'questions'
   })
 
-  // Enhancement 4 — burst animation via useEffect watching sessionStreak
-  // sessionStreak is READ (in deps), showStreakBurst is SET (not in deps)
+  // Feature 2: streak burst animation
+  // READ: sessionStreak; SET: showStreakBurst (not in deps)
   useEffect(() => {
     if (sessionStreak < 5) {
       setShowStreakBurst(false)
@@ -68,7 +68,6 @@ export default function Learn() {
 
   // ONE useEffect — generates MC options and TF data for the current card
   // options and tfData are SET here — must NOT be in the dependency array
-  // set and cardStats omitted from deps to avoid object identity loops
   useEffect(() => {
     if (queue.length === 0) return
     if (currentPos >= queue.length) return
@@ -76,7 +75,8 @@ export default function Learn() {
     if (!set) return
     const cardIndex = queue[currentPos]
     const card = set.cards[cardIndex]
-    const dir = getDirection(currentPos)
+    const qType = getQuestionType(cardIndex)
+    const dir = getDirection(currentPos, qType)
     setOptions(generateOptions(card, set.cards, dir))
     // TF: 50% show correct answer, 50% show a wrong answer
     const isTrue = Math.random() < 0.5
@@ -86,7 +86,7 @@ export default function Learn() {
       ? shuffle(otherCards)[0][dir === 'term-to-def' ? 'definition' : 'term']
       : correctVal
     setTfData({ isTrue, shownDef: isTrue ? correctVal : wrongVal, correctDef: correctVal })
-  }, [currentPos, phase, queue.length])
+  }, [currentPos, phase, queue.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-start session on mount
   useEffect(() => {
@@ -96,9 +96,12 @@ export default function Learn() {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  function getDirection(pos) {
+  // Feature 5: direction mixing only applies to MC
+  function getDirection(pos, qType) {
     if (settings.direction === 'term-to-def') return 'term-to-def'
     if (settings.direction === 'def-to-term') return 'def-to-term'
+    // mixed: alternate only for MC; TTA/TF default to term-to-def
+    if (qType !== 'mc') return 'term-to-def'
     return pos % 2 === 0 ? 'term-to-def' : 'def-to-term'
   }
 
@@ -144,10 +147,8 @@ export default function Learn() {
     return types[stat.timesShown % 3]
   }
 
-  // Shared streak computation — used by handleAnswer and "Got it" handler
   function computeNewStreak(currentStreak, correct) {
     if (correct) return currentStreak + 1
-    // Demotion: Mastered (>=3) wrong → Familiar (1); else → Learning (0)
     return currentStreak >= 3 ? 1 : 0
   }
 
@@ -178,6 +179,7 @@ export default function Learn() {
     setIsCorrect(null)
     setTypedAnswer('')
     setShowSkipBadge(false)
+    setWrongThisRound([])
   }
 
   const handleAnswer = (correct) => {
@@ -185,10 +187,14 @@ export default function Learn() {
     setIsCorrect(correct)
     setPhase('feedback')
 
-    // Compute new streak synchronously to check round-summary eligibility
     const stat = cardStats[cardIndex]
     const newStreak = computeNewStreak(stat.streak, correct)
     const newLearned = newStreak >= 3
+
+    // Feature 1: track wrong cards this round
+    if (!correct) {
+      setWrongThisRound(prev => prev.includes(cardIndex) ? prev : [...prev, cardIndex])
+    }
 
     setCardStats(prev => {
       const s = prev[cardIndex]
@@ -201,6 +207,7 @@ export default function Learn() {
       return prevCount + delta
     })
 
+    // Feature 2: streak tracking
     setSessionStreak(prev => correct ? prev + 1 : 0)
 
     // Re-queue logic
@@ -220,7 +227,6 @@ export default function Learn() {
       })
     }
 
-    // Check if all cards are now mastered (using current cardStats snapshot + new result)
     const wouldAllBeMastered = newLearned && Object.entries(cardStats).every(([i, s]) => {
       return parseInt(i) === cardIndex ? newLearned : s.learned
     })
@@ -244,7 +250,8 @@ export default function Learn() {
     if (!set || queue.length === 0) return
     const cardIndex = queue[currentPos]
     const card = set.cards[cardIndex]
-    const dir = getDirection(currentPos)
+    const qType = getQuestionType(cardIndex)
+    const dir = getDirection(currentPos, qType)
     const correctAnswer = dir === 'term-to-def' ? card.definition : card.term
     const sim = similarity(typedAnswer, correctAnswer)
 
@@ -258,7 +265,6 @@ export default function Learn() {
       setShowAnswer(true)
       setIsCorrect(false)
       setPhase('feedback')
-      // wrong TTA: wait for user to click "Got it" — no auto-advance
     }
   }
 
@@ -317,6 +323,7 @@ export default function Learn() {
     setTypedAnswer('')
     setShowAnswer(false)
     setShowSkipBadge(false)
+    setWrongThisRound([])
   }
 
   const handleRestart = () => {
@@ -339,6 +346,15 @@ export default function Learn() {
     resetSessionState(shuffled, newStats)
   }
 
+  // Feature 1: study only the cards answered wrong this round
+  const handleStudyWrongCards = () => {
+    if (!set || wrongThisRound.length === 0) return
+    const shuffled = shuffle([...wrongThisRound])
+    const newStats = {}
+    shuffled.forEach(i => { newStats[i] = { streak: 0, timesShown: 0, learned: false, skips: 0 } })
+    resetSessionState(shuffled, newStats)
+  }
+
   // ── Post-mount render guards ───────────────────────────────────────────
 
   if (!set || !set.cards || set.cards.length === 0) {
@@ -355,72 +371,57 @@ export default function Learn() {
     )
   }
 
-  // ── Round summary screen (Enhancement 3) ─────────────────────────────────
+  // ── Round summary screen (Feature 1 redesign) ────────────────────────────
 
   if (phase === 'round-summary') {
-    const masteredEntries = Object.entries(cardStats).filter(([, s]) => s.streak >= 3)
-    const familiarEntries = Object.entries(cardStats).filter(([, s]) => s.streak >= 1 && s.streak < 3)
-    const learningEntries = Object.entries(cardStats).filter(([, s]) => s.streak === 0)
-    const totalCards = set.cards.length
+    const totalThisRound = Object.keys(cardStats).length
+    const correctCount = totalThisRound - wrongThisRound.length
+    const pct = totalThisRound > 0 ? correctCount / totalThisRound : 1
+    const headline = pct >= 0.7 ? 'Round Complete! 🎉' : 'Keep going 💪'
 
     return (
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-2xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <p className="text-5xl mb-3">🎯</p>
-          <h1 className="text-2xl font-bold text-zinc-100 mb-1">Round Complete!</h1>
-          <p className="text-zinc-400 text-sm">{learnedCount} of {totalCards} mastered</p>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-[#0d1424] rounded-lg p-4">
-            <h2 className="text-green-400 font-semibold mb-3 text-sm">
-              Mastered ✅ ({masteredEntries.length})
-            </h2>
-            <div className="space-y-1">
-              {masteredEntries.map(([i]) => (
-                <p key={i} className="text-zinc-300 text-xs truncate">{set.cards[parseInt(i)]?.term}</p>
-              ))}
-              {masteredEntries.length === 0 && <p className="text-zinc-500 text-xs">None yet</p>}
-            </div>
-          </div>
-
-          <div className="bg-[#0d1424] rounded-lg p-4">
-            <h2 className="text-yellow-400 font-semibold mb-3 text-sm">
-              Familiar 🟡 ({familiarEntries.length})
-            </h2>
-            <div className="space-y-1">
-              {familiarEntries.map(([i]) => (
-                <p key={i} className="text-zinc-300 text-xs truncate">{set.cards[parseInt(i)]?.term}</p>
-              ))}
-              {familiarEntries.length === 0 && <p className="text-zinc-500 text-xs">None</p>}
-            </div>
-          </div>
-
-          <div className="bg-[#0d1424] rounded-lg p-4">
-            <h2 className="text-red-400 font-semibold mb-3 text-sm">
-              Still Learning 🔴 ({learningEntries.length})
-            </h2>
-            <div className="space-y-1">
-              {learningEntries.map(([i]) => (
-                <p key={i} className="text-zinc-300 text-xs truncate">{set.cards[parseInt(i)]?.term}</p>
-              ))}
-              {learningEntries.length === 0 && <p className="text-zinc-500 text-xs">None</p>}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-3 justify-center">
-          <button
-            onClick={() => { markStudied(id); setPhase('complete') }}
-            className="h-10 px-6 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-sm"
+          <h1
+            className="text-3xl font-bold text-white mb-2 ff-heading"
+            style={{ fontFamily: "'Syne', sans-serif" }}
           >
-            Continue
+            {headline}
+          </h1>
+          <p className="text-zinc-400">
+            {correctCount} / {totalThisRound} correct this round
+          </p>
+        </div>
+
+        {wrongThisRound.length > 0 && (
+          <div className="glass-card p-4 mb-6">
+            <h2 className="text-xs uppercase tracking-widest text-[#60a5fa]/50 font-medium mb-3">
+              Missed cards
+            </h2>
+            <div className="space-y-2">
+              {wrongThisRound.map(i => (
+                <div key={i} className="border border-blue-500/10 rounded-lg p-3">
+                  <p className="text-white font-medium text-sm">{set.cards[i]?.term}</p>
+                  <p className="text-zinc-400 text-sm mt-0.5">{set.cards[i]?.definition}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-3 justify-center flex-wrap">
+          <button
+            onClick={handleStudyWrongCards}
+            disabled={wrongThisRound.length === 0}
+            className="h-10 px-5 rounded-lg border border-[rgba(96,165,250,0.3)] text-[#60a5fa] hover:bg-blue-900/20 transition-colors font-medium text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            Study missed cards again
           </button>
           <button
-            onClick={handleStudyMissedOnly}
-            className="h-10 px-5 rounded-lg bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors font-medium text-sm"
+            onClick={handleRestart}
+            className="h-10 px-5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-sm"
           >
-            Study Again
+            Study all cards again
           </button>
         </div>
       </main>
@@ -454,12 +455,12 @@ export default function Learn() {
         </div>
 
         <div className="bg-[#0d1424] rounded-lg overflow-hidden mb-8">
-          <div className="grid grid-cols-3 gap-4 p-4 bg-zinc-700 font-medium text-sm text-zinc-200">
+          <div className="grid grid-cols-3 gap-4 p-4 bg-[#111c30] font-medium text-sm text-zinc-200">
             <div>Card</div>
             <div>Stage</div>
             <div>Status</div>
           </div>
-          <div className="divide-y divide-zinc-700">
+          <div className="divide-y divide-zinc-800">
             {set.cards.map((card, i) => {
               const stat = cardStats[i]
               return (
@@ -515,8 +516,8 @@ export default function Learn() {
   }
 
   const card = currentCard
-  const dir = getDirection(currentPos)
   const questionType = getQuestionType(cardIndex)
+  const dir = getDirection(currentPos, questionType)
   const question = dir === 'term-to-def' ? card.term : card.definition
   const correctAnswer = dir === 'term-to-def' ? card.definition : card.term
   const prompt = dir === 'term-to-def' ? 'Select the correct definition:' : 'Select the correct term:'
@@ -524,7 +525,6 @@ export default function Learn() {
   const currentStat = cardStats[cardIndex]
   const isStarred = starredCards.includes(cardIndex)
 
-  // Enhancement 7 — progress bar values
   const progressValue = progressMode === 'questions'
     ? queue.length > 0 ? currentPos / queue.length : 0
     : learnedCount / totalCards
@@ -532,8 +532,9 @@ export default function Learn() {
     ? `Question ${currentPos + 1} of ${queue.length}`
     : `${learnedCount} of ${totalCards} mastered`
 
-  // Enhancement 4 — streak display
-  const streakDisplay = sessionStreak >= 10 ? '🔥🔥' : sessionStreak > 0 ? `🔥 ${sessionStreak}` : null
+  // Feature 2: show streak at >= 2
+  const streakDisplay = sessionStreak >= 2 ? `🔥 ${sessionStreak}` : null
+  const streakGlow = sessionStreak >= 5
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8">
@@ -557,7 +558,7 @@ export default function Learn() {
         <div className="flex items-center gap-3">
           {streakDisplay && (
             <span
-              className={`text-sm font-bold transition-transform duration-150 inline-block ${showStreakBurst ? 'scale-150' : 'scale-100'}`}
+              className={`text-sm font-bold text-orange-400 transition-transform duration-150 inline-block ${showStreakBurst ? 'scale-150' : 'scale-100'} ${streakGlow ? 'streak-glow' : ''}`}
             >
               {streakDisplay}
             </span>
@@ -574,7 +575,7 @@ export default function Learn() {
         </button>
       </div>
 
-      {/* Progress bar with toggle (Enhancement 7) */}
+      {/* Progress bar with toggle */}
       <div className="flex items-center gap-2">
         <div className="flex-1">
           <ProgressBar
@@ -594,7 +595,6 @@ export default function Learn() {
 
       {/* Card area */}
       <div className="mt-8">
-        {/* Stage pill + star button */}
         <div className="flex items-center justify-between mb-4">
           <div>{currentStat && getStagePill(currentStat.streak)}</div>
           <button
@@ -606,7 +606,6 @@ export default function Learn() {
           </button>
         </div>
 
-        {/* Skip badge */}
         {showSkipBadge && (
           <div className="text-center text-zinc-400 text-sm mb-4 animate-pulse">
             Skipped →
@@ -616,36 +615,24 @@ export default function Learn() {
         <div className="text-center">
           {/* ── Multiple Choice ── */}
           {questionType === 'mc' && (
-            <>
-              <p className="text-zinc-400 text-sm mb-4">{prompt}</p>
-              <div className="text-3xl font-bold text-zinc-100 mb-8">{question}</div>
-              <div className="grid grid-cols-2 gap-4">
-                {options.map((option, idx) => {
-                  let bg = 'bg-[#0d1424] border border-blue-500/20 text-zinc-200 hover:border-blue-400/60'
-                  if (selectedAnswer === option) {
-                    bg = option.isCorrect ? 'bg-green-500 border border-green-400 text-white' : 'bg-red-500 border border-red-400 text-white'
-                  } else if (phase === 'feedback' && option.isCorrect) {
-                    bg = 'bg-green-500 border border-green-400 text-white'
-                  } else if (phase === 'feedback') {
-                    bg = 'bg-[#0d1424] border border-zinc-700 text-zinc-500'
-                  }
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        if (phase !== 'question') return
-                        setSelectedAnswer(option)
-                        handleAnswer(option.isCorrect)
-                      }}
-                      disabled={phase !== 'question'}
-                      className={`p-4 rounded-lg font-medium text-sm transition-all ${bg} ${phase !== 'question' ? 'cursor-default' : 'cursor-pointer'}`}
-                    >
-                      {option.value}
-                    </button>
-                  )
-                })}
-              </div>
-            </>
+            <McQuestion
+              prompt={prompt}
+              question={question}
+              options={options}
+              phase={phase}
+              selectedAnswer={selectedAnswer}
+              onAnswer={(option) => {
+                if (phase !== 'question') return
+                setSelectedAnswer(option)
+                handleAnswer(option.isCorrect)
+              }}
+              onKeySelect={(idx) => {
+                if (phase !== 'question' || !options[idx]) return
+                setSelectedAnswer(options[idx])
+                handleAnswer(options[idx].isCorrect)
+              }}
+              currentPos={currentPos}
+            />
           )}
 
           {/* ── Type the Answer ── */}
@@ -690,43 +677,43 @@ export default function Learn() {
               {phase === 'feedback' && !isCorrect && (
                 <>
                   <p className="text-sm text-zinc-400 mb-3">Think of the answer, then click Got it if you were right</p>
-                <button
-                  onClick={() => {
-                    const s = cardStats[cardIndex]
-                    const ns = computeNewStreak(s.streak, false)
-                    const newLearned = ns >= 3
-                    setCardStats(prev => {
-                      const cur = prev[cardIndex]
-                      const nextStreak = computeNewStreak(cur.streak, false)
-                      return { ...prev, [cardIndex]: { ...cur, streak: nextStreak, timesShown: cur.timesShown + 1, learned: nextStreak >= 3 } }
-                    })
-                    setLearnedCount(prev => {
-                      const delta = (newLearned && !s.learned) ? 1 : (!newLearned && s.learned) ? -1 : 0
-                      return prev + delta
-                    })
-                    setSessionStreak(0)
-                    setQueue(prev => {
-                      const next = [...prev]
-                      next.splice(Math.min(currentPos + 4, next.length), 0, cardIndex)
-                      return next
-                    })
-                    setSelectedAnswer(null)
-                    setIsCorrect(null)
-                    setTypedAnswer('')
-                    setShowAnswer(false)
-                    setPhase('question')
-                    setCurrentPos(prev => prev + 1)
-                  }}
-                  className="h-10 px-6 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-sm"
-                >
-                  Got it
-                </button>
+                  <button
+                    onClick={() => {
+                      const s = cardStats[cardIndex]
+                      const ns = computeNewStreak(s.streak, false)
+                      const newLearned = ns >= 3
+                      setCardStats(prev => {
+                        const cur = prev[cardIndex]
+                        const nextStreak = computeNewStreak(cur.streak, false)
+                        return { ...prev, [cardIndex]: { ...cur, streak: nextStreak, timesShown: cur.timesShown + 1, learned: nextStreak >= 3 } }
+                      })
+                      setLearnedCount(prev => {
+                        const delta = (newLearned && !s.learned) ? 1 : (!newLearned && s.learned) ? -1 : 0
+                        return prev + delta
+                      })
+                      setSessionStreak(0)
+                      setQueue(prev => {
+                        const next = [...prev]
+                        next.splice(Math.min(currentPos + 4, next.length), 0, cardIndex)
+                        return next
+                      })
+                      setSelectedAnswer(null)
+                      setIsCorrect(null)
+                      setTypedAnswer('')
+                      setShowAnswer(false)
+                      setPhase('question')
+                      setCurrentPos(prev => prev + 1)
+                    }}
+                    className="h-10 px-6 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-sm"
+                  >
+                    Got it
+                  </button>
                 </>
               )}
             </>
           )}
 
-          {/* ── True / False (Enhancement 1) ── */}
+          {/* ── True / False ── */}
           {questionType === 'tf' && tfData && (
             <>
               <p className="text-zinc-400 text-sm mb-4">Is this definition correct for the term shown?</p>
@@ -780,7 +767,7 @@ export default function Learn() {
           )}
         </div>
 
-        {/* Skip button (Enhancement 6) */}
+        {/* Skip button */}
         {phase === 'question' && !showSkipBadge && (
           <div className="text-center mt-6">
             <button
@@ -792,6 +779,13 @@ export default function Learn() {
           </div>
         )}
       </div>
+
+      {/* Feature 4: Learn keyboard hint bar */}
+      {questionType === 'mc' && phase === 'question' && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-4 text-xs text-blue-400/40 bg-black/20 backdrop-blur-sm px-4 py-2 rounded-full border border-blue-500/10 pointer-events-none">
+          <span>1-4 Select</span>
+        </div>
+      )}
 
       {/* Settings drawer */}
       {settingsOpen && (
@@ -841,7 +835,7 @@ export default function Learn() {
                   {[
                     { value: 'term-to-def', label: 'Term → Definition' },
                     { value: 'def-to-term', label: 'Definition → Term' },
-                    { value: 'mixed', label: 'Mixed' },
+                    { value: 'mixed', label: 'Mixed (MC alternates)' },
                   ].map(option => (
                     <label key={option.value} className="flex items-center cursor-pointer">
                       <input
@@ -886,5 +880,55 @@ export default function Learn() {
         </>
       )}
     </main>
+  )
+}
+
+// ── McQuestion sub-component with keyboard shortcut support ───────────────────
+
+function McQuestion({ prompt, question, options, phase, selectedAnswer, onAnswer, onKeySelect, currentPos }) {
+  // Feature 4: keyboard shortcuts 1-4 for MC
+  // READ: phase, options (via currentPos), currentPos; SET: nothing directly (calls onAnswer/onKeySelect)
+  useEffect(() => {
+    if (phase !== 'question') return
+    function handleKey(e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      const idx = parseInt(e.key) - 1
+      if (idx >= 0 && idx <= 3) onKeySelect(idx)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [phase, currentPos]) // eslint-disable-line react-hooks/exhaustive-deps
+  // onKeySelect is a stable inline fn recreated each render; currentPos is the proxy for options changing
+
+  return (
+    <>
+      <p className="text-zinc-400 text-sm mb-4">{prompt}</p>
+      <div className="text-3xl font-bold text-zinc-100 mb-8">{question}</div>
+      <div className="grid grid-cols-2 gap-4">
+        {options.map((option, idx) => {
+          let bg = 'bg-[#0d1424] border border-blue-500/20 text-zinc-200 hover:border-blue-400/60'
+          if (selectedAnswer === option) {
+            bg = option.isCorrect
+              ? 'bg-green-500 border border-green-400 text-white'
+              : 'bg-red-500 border border-red-400 text-white'
+          } else if (phase === 'feedback' && option.isCorrect) {
+            bg = 'bg-green-500 border border-green-400 text-white'
+          } else if (phase === 'feedback') {
+            bg = 'bg-[#0d1424] border border-zinc-700 text-zinc-500'
+          }
+          return (
+            <button
+              key={idx}
+              onClick={() => onAnswer(option)}
+              disabled={phase !== 'question'}
+              className={`p-4 rounded-lg font-medium text-sm transition-all text-left ${bg} ${phase !== 'question' ? 'cursor-default' : 'cursor-pointer'}`}
+            >
+              <span className="text-[#60a5fa]/40 text-xs mr-2">{idx + 1}</span>
+              {option.value}
+            </button>
+          )
+        })}
+      </div>
+    </>
   )
 }

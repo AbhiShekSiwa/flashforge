@@ -1,24 +1,34 @@
 import { useState, useEffect } from 'react'
 
-export default function FlipCard({ front, back }) {
-  const [flipped, setFlipped] = useState(false)
+export default function FlipCard({ front, back, flipped: controlledFlipped, onFlip }) {
+  const [internalFlipped, setInternalFlipped] = useState(false)
 
+  const isControlled = controlledFlipped !== undefined
+  const flipped = isControlled ? controlledFlipped : internalFlipped
+
+  const doFlip = () => {
+    if (isControlled) onFlip?.()
+    else setInternalFlipped(f => !f)
+  }
+
+  // Only handle keyboard in uncontrolled mode — controlled mode parent manages keyboard
   useEffect(() => {
+    if (isControlled) return
     function onKey(e) {
       if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault()
-        setFlipped(f => !f)
+        setInternalFlipped(f => !f)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [isControlled])
 
   return (
     <div
       className="relative w-full cursor-pointer select-none"
       style={{ perspective: '1200px', height: '300px' }}
-      onClick={() => setFlipped(f => !f)}
+      onClick={doFlip}
     >
       <div
         className="relative w-full h-full transition-transform duration-500"
