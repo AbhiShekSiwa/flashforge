@@ -29,6 +29,7 @@ export default function Learn() {
   useEffect(() => {
     if (showSettings) return
     if (queue.length === 0) return
+    if (currentPos >= queue.length) return
     if (phase !== 'question') return
     if (!set) return
     const cardIndex = queue[currentPos]
@@ -87,16 +88,22 @@ export default function Learn() {
     setIsCorrect(correct)
     setPhase('feedback')
 
-    let willLearn = false
     setCardStats(prev => {
       const stat = prev[cardIndex]
       const newStreak = correct ? stat.streak + 1 : 0
       const learned = newStreak >= 2
-      if (learned && !stat.learned) {
-        willLearn = true
-        setLearnedCount(c => c + 1)
-      }
-      return { ...prev, [cardIndex]: { ...stat, streak: newStreak, timesShown: stat.timesShown + 1, learned } }
+      const newStats = { ...prev, [cardIndex]: { ...stat, streak: newStreak, timesShown: stat.timesShown + 1, learned } }
+      return newStats
+    })
+
+    setLearnedCount(prevCount => {
+      const stat = cardStats[cardIndex]
+      if (!stat) return prevCount
+      const newStreak = correct ? stat.streak + 1 : 0
+      const learned = newStreak >= 2
+      const newCount = (learned && !stat.learned) ? prevCount + 1 : prevCount
+      console.log('handleAnswer: cardIndex=', cardIndex, 'correct=', correct, 'streak->', newStreak, 'learnedCount->', newCount)
+      return newCount
     })
 
     if (!correct) {
@@ -372,7 +379,13 @@ export default function Learn() {
   // ── Active session ────────────────────────────────────────────────────────
 
   const cardIndex = queue[currentPos]
-  const card = set.cards[cardIndex]
+  const currentCard = set.cards[cardIndex]
+
+  if (!showSettings && queue.length > 0 && !currentCard) {
+    return null
+  }
+
+  const card = currentCard
   const dir = getDirection(currentPos)
   const questionType = getQuestionType(cardIndex)
   const question = dir === 'term-to-def' ? card.term : card.definition
