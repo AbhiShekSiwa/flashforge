@@ -55,5 +55,34 @@ export function useSets() {
     setSets(prev => prev.map(s => (s.id === id ? { ...s, name } : s)))
   }
 
-  return { sets, addSet, deleteSet, updateSrData, markStudied, renameSet }
+  function updateCards(setId, newCards) {
+    const today = new Date().toISOString().slice(0, 10)
+    setSets(prev =>
+      prev.map(s => {
+        if (s.id !== setId) return s
+        const oldCards = s.cards
+        const oldSrData = s.srData || {}
+        const newSrData = {}
+        newCards.forEach((card, newIdx) => {
+          const oldIdx = oldCards.findIndex(
+            c => c.term === card.term && c.definition === card.definition
+          )
+          if (oldIdx !== -1 && oldSrData[String(oldIdx)]) {
+            newSrData[String(newIdx)] = oldSrData[String(oldIdx)]
+          } else {
+            newSrData[String(newIdx)] = {
+              interval: 1,
+              easeFactor: 2.5,
+              repetitions: 0,
+              nextReview: today,
+              lastRating: null,
+            }
+          }
+        })
+        return { ...s, cards: newCards, srData: newSrData, lastStudied: new Date().toISOString() }
+      })
+    )
+  }
+
+  return { sets, addSet, deleteSet, updateSrData, markStudied, renameSet, updateCards }
 }

@@ -37,6 +37,13 @@ body {
   font-family: 'Syne', sans-serif;
 }
 
+.card-textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 40px;
+  field-sizing: content;
+}
+
 .card-scene { perspective: 1200px; }
 .card-inner { transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); transform-style: preserve-3d; }
 .card-inner.flipped { transform: rotateY(180deg); }

@@ -17,6 +17,7 @@
 | Match mode spec               | `.claude/specs/match-mode.md`       |
 | Blast mode spec               | `.claude/specs/blast-mode.md`       |
 | Spaced rep / Review spec      | `.claude/specs/review-mode.md`      |
+| Edit Cards page spec          | `.claude/specs/edit-cards.md`       |
 
 ---
 
@@ -45,10 +46,10 @@
 ▼
 [SetDetail page]
 │
-┌────┴─────┬──────────┬──────────┬──────────┬──────────┐
-▼          ▼          ▼          ▼          ▼          ▼
-[Flashcards] [Learn]  [Test]    [Match]    [Blast]   [Review]
-mode        mode     mode      mode       mode     (SR mode)
+┌────┴─────┬──────────┬──────────┬──────────┬──────────┬──────────┐
+▼          ▼          ▼          ▼          ▼          ▼          ▼
+[Flashcards] [Learn]  [Test]    [Match]    [Blast]   [Review]  [EditCards]
+mode        mode     mode      mode       mode     (SR mode)   page
 
 ---
 
@@ -168,16 +169,39 @@ No API calls, no auth, no server. If it can't be done in localStorage, it's out 
 | Test Mode | `.claude/specs/test-mode.md` | 📋 Planned |
 | Match Mode | `.claude/specs/match-mode.md` | 📋 Planned |
 | Blast Mode | `.claude/specs/blast-mode.md` | 📋 Planned |
+| Edit Cards (add/edit/delete) | `.claude/specs/edit-cards.md` | ✅ Done |
 
 ---
 
 ## Standing Rule — Doc Sync
 After completing ANY task that modifies component files, styling, or project structure:
-1. Re-read all files in .claude/context/ that are relevant to what changed
-2. Update any stale facts in those docs to match the new reality
-3. Do this as the final step of every task, without being asked
+1. Re-read all files in .claude/context/ relevant to what changed and update stale facts
+2. For every NEW feature, page, hook, or utility added:
+   - Create a spec file in .claude/specs/ documenting: purpose, file locations, state managed, gotchas
+   - Add a row to the navigation table at the top of this file pointing to the new spec
+   - Add the feature to the ACTIVE FEATURES table marked ✅ Done
+3. If new localStorage keys were introduced, add them to the schema section above
+4. If the architecture diagram needs a new node (new page/mode), add it
+5. Do this as the final step of every task, without being asked
+6. Update in place only — do not restructure or reformat existing docs
 
+
+
+### Doc Sync (run this as the final step)
+
+After all code changes are complete:
+
+1. Check which files were created or modified in this task
+2. For every NEW page, component, hook, or utility created:
+   - Create a corresponding markdown spec file in `.claude/specs/` named after the feature (e.g. `round-summary.md`, `keyboard-shortcuts.md`)
+   - The spec file should document: what the feature does, which files it lives in, what state it manages, and any gotchas found during implementation
+3. Update `CLAUDE.md`:
+   - If a new page was added, add it to the architecture diagram
+   - If a new spec file was created, add a row to the navigation table at the top
+   - If a new localStorage key was introduced, add it to the schema section
+   - Update the ACTIVE FEATURES table with the new feature and its spec file path, marked ✅ Done
+4. Update any `.claude/context/` files that reference components or patterns that changed
+5. Do NOT restructure or reformat any existing docs — update in place only
 
 *Last updated: April 2026*
 *Stack: React 18, Vite 5, Tailwind CSS v3, React Router v6, Node 20 LTS*
-

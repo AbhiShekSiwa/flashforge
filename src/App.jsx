@@ -10,6 +10,7 @@ import Test from './modes/Test.jsx'
 import Match from './modes/Match.jsx'
 import Blast from './modes/Blast.jsx'
 import Review from './modes/Review.jsx'
+import EditCardsPage from './pages/EditCardsPage.jsx'
 
 // Wrapper reads :id from params so ErrorBoundary has the right backHref
 function ModeErrorBoundary({ children }) {
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/sets/:id/match" element={<ModeErrorBoundary><Match /></ModeErrorBoundary>} />
           <Route path="/sets/:id/blast" element={<ModeErrorBoundary><Blast /></ModeErrorBoundary>} />
           <Route path="/sets/:id/review" element={<ModeErrorBoundary><Review /></ModeErrorBoundary>} />
+          <Route path="/sets/:id/edit-cards" element={<EditCardsPage />} />
         </Routes>
       </div>
     </BrowserRouter>

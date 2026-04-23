@@ -56,6 +56,7 @@ CSS variables are defined in `src/index.css` and consumed throughout the app. Do
 /sets/:id/match          → modes/Match.jsx
 /sets/:id/blast          → modes/Blast.jsx
 /sets/:id/review         → modes/Review.jsx
+/sets/:id/edit-cards     → pages/EditCardsPage.jsx
 
 ## Component Tree
 App.jsx (router)

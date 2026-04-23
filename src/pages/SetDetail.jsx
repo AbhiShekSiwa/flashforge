@@ -114,6 +114,13 @@ export default function SetDetail() {
           <span>Created {createdDate}</span>
         </div>
 
+        <button
+          onClick={() => navigate(`/sets/${id}/edit-cards`)}
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-blue-500/20 text-blue-400/70 hover:text-blue-400 hover:border-blue-500/40 hover:bg-blue-900/10 transition-all mb-6"
+        >
+          ✏️ Edit Cards
+        </button>
+
         {/* Inline-editable description */}
         {editingDesc ? (
           <textarea
