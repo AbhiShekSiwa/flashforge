@@ -49,6 +49,26 @@ export default function Learn() {
   // BUG 1: Store generated options per card to prevent reshuffling
   const [cardOptions, setCardOptions] = useState({})
 
+  const {
+    queue = [],
+    cardStats = {},
+    learnedCount = 0,
+    totalCards = 0,
+    currentQueuePos = 0,
+    sessionComplete = false,
+    completedByEndButton = false,
+    originalTotalCards = 0,
+  } = sessionState || {}
+
+  // Generate card direction once per card index
+  useEffect(() => {
+    if (!sessionState || queue.length === 0 || currentQueuePos >= queue.length) return
+    const idx = queue[currentQueuePos]
+    if (!cardDirections.hasOwnProperty(idx)) {
+      setCardDirections(prev => ({ ...prev, [idx]: getRandomDirection() }))
+    }
+  }, [currentQueuePos, queue, cardDirections, sessionState])
+
   // BUG 3: Settings screen UI
   if (showSettings) {
     return (
@@ -122,7 +142,27 @@ export default function Learn() {
         </div>
 
         <button
-          onClick={() => setShowSettings(false)}
+          onClick={() => {
+            if (!sessionState && set && set.cards.length > 0) {
+              const totalCards = set.cards.length
+              const cardIndices = Array.from({ length: totalCards }, (_, i) => i)
+              const newCardStats = {}
+              for (let i = 0; i < totalCards; i++) {
+                newCardStats[i] = { streak: 0, timesShown: 0, learned: false }
+              }
+              setSessionState({
+                queue: shuffle(cardIndices),
+                cardStats: newCardStats,
+                learnedCount: 0,
+                totalCards,
+                currentQueuePos: 0,
+                sessionComplete: false,
+                completedByEndButton: false,
+                originalTotalCards: totalCards,
+              })
+            }
+            setShowSettings(false)
+          }}
           className="w-full h-12 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium text-base"
         >
           Start Learning
@@ -154,8 +194,6 @@ export default function Learn() {
       </main>
     )
   }
-
-  const { queue, cardStats, learnedCount, totalCards, currentQueuePos, sessionComplete, completedByEndButton = false, originalTotalCards = totalCards } = sessionState
 
   function getQuestionType(cardIndex) {
     // BUG 1 & 3: Respect user settings instead of adaptive logic
@@ -192,18 +230,17 @@ export default function Learn() {
 
   // BUG 1: Generate options once per card and store in state to prevent reshuffling
   useEffect(() => {
-    if (queue.length > 0 && currentQueuePos < queue.length) {
-      const idx = queue[currentQueuePos]
-      if (!cardOptions.hasOwnProperty(idx)) {
-        const card = set.cards[idx]
-        const isTermFirst = cardDirections[idx]
-        if (isTermFirst !== undefined) {
-          const options = generateOptions(card, idx, isTermFirst)
-          setCardOptions(prev => ({ ...prev, [idx]: options }))
-        }
+    if (!set || queue.length === 0 || currentQueuePos >= queue.length) return
+    const idx = queue[currentQueuePos]
+    if (!cardOptions.hasOwnProperty(idx)) {
+      const card = set.cards[idx]
+      const isTermFirst = cardDirections[idx]
+      if (isTermFirst !== undefined) {
+        const options = generateOptions(card, idx, isTermFirst)
+        setCardOptions(prev => ({ ...prev, [idx]: options }))
       }
     }
-  }, [currentQueuePos, queue, cardDirections, cardOptions, set.cards])
+  }, [currentQueuePos, queue, cardDirections, cardOptions, set])
 
   function handleMCSelection(option) {
     if (isProcessing) return
@@ -433,15 +470,6 @@ export default function Learn() {
       </main>
     )
   }
-
-  useEffect(() => {
-    if (queue.length > 0 && currentQueuePos < queue.length) {
-      const idx = queue[currentQueuePos]
-      if (!cardDirections.hasOwnProperty(idx)) {
-        setCardDirections(prev => ({ ...prev, [idx]: getRandomDirection() }))
-      }
-    }
-  }, [currentQueuePos, queue, cardDirections])
 
   const currentCardIndex = queue[currentQueuePos]
   const currentCard = set.cards[currentCardIndex]
