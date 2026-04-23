@@ -67,7 +67,7 @@ export default function Learn() {
     if (!cardDirections.hasOwnProperty(idx)) {
       setCardDirections(prev => ({ ...prev, [idx]: getRandomDirection() }))
     }
-  }, [currentQueuePos, queue, cardDirections, sessionState])
+  }, [currentQueuePos, queue, sessionState])
 
   // BUG 3: Settings screen UI
   if (showSettings) {
@@ -240,7 +240,7 @@ export default function Learn() {
         setCardOptions(prev => ({ ...prev, [idx]: options }))
       }
     }
-  }, [currentQueuePos, queue, cardDirections, cardOptions, set])
+  }, [currentQueuePos, queue, cardDirections])
 
   function handleMCSelection(option) {
     if (isProcessing) return
@@ -477,7 +477,7 @@ export default function Learn() {
   const questionType = getQuestionType(currentCardIndex)
   const isTermFirst = cardDirections[currentCardIndex]
 
-  if (isTermFirst === undefined) {
+  if (isTermFirst === undefined || !cardOptions[currentCardIndex]) {
     return (
       <main className="max-w-2xl mx-auto px-4 py-16 text-center">
         <p className="text-zinc-400 mb-4">Preparing question...</p>

@@ -87,9 +87,17 @@ Value is a JSON array of Set objects:
 - `srData` keys are card array indices as strings ("0", "1", "2"...)
 - `lastStudied` is updated by `useSets.js` whenever any mode session completes
 
+
 ### Adding / editing sets
 - Import screen calls `useSets.addSet(name, cards)`
 - No editing of individual cards in v1 (out of scope)
+
+### ⚠️ REACT USEEFFECT RULES — ALWAYS FOLLOW
+
+Infinite loop bugs (React error #310) have been a repeated issue.
+Claude must follow these rules for EVERY useEffect it writes:
+Before writing ANY useEffect:** read `.claude/context/useeffect-rules.md`
+
 
 ---
 
@@ -128,6 +136,7 @@ No API calls, no auth, no server. If it can't be done in localStorage, it's out 
 - React Router v6 patterns only (`useParams`, `useNavigate`, `<Outlet>`)
 
 ---
+
 
 ## 🚫 NEVER TOUCH WITHOUT BEING TOLD
 
