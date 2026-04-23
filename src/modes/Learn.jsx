@@ -42,7 +42,7 @@ export default function Learn() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [cardDirections, setCardDirections] = useState({})
 
-  if (!set || set.cards.length === 0) {
+  if (!set || !set.cards || set.cards.length === 0) {
     return (
       <main className="max-w-2xl mx-auto px-4 py-16 text-center">
         <p className="text-zinc-400 mb-4">
@@ -58,7 +58,13 @@ export default function Learn() {
     )
   }
 
-  if (!sessionState) return null
+  if (!sessionState) {
+    return (
+      <main className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <p className="text-zinc-400 mb-4">Loading session...</p>
+      </main>
+    )
+  }
 
   const { queue, cardStats, learnedCount, totalCards, currentQueuePos, sessionComplete, completedByEndButton = false, originalTotalCards = totalCards } = sessionState
 
@@ -309,7 +315,11 @@ export default function Learn() {
   }
 
   if (queue.length === 0 || currentQueuePos >= queue.length) {
-    return null
+    return (
+      <main className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <p className="text-zinc-400 mb-4">Loading next card...</p>
+      </main>
+    )
   }
 
   useEffect(() => {
@@ -327,7 +337,13 @@ export default function Learn() {
   const questionType = getQuestionType(currentCardIndex)
   const isTermFirst = cardDirections[currentCardIndex]
 
-  if (!isTermFirst) return null
+  if (isTermFirst === undefined) {
+    return (
+      <main className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <p className="text-zinc-400 mb-4">Preparing question...</p>
+      </main>
+    )
+  }
 
   const question = isTermFirst ? currentCard.term : currentCard.definition
   const prompt = isTermFirst ? 'Select the correct definition:' : 'Select the correct term:'
