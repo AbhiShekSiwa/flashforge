@@ -11,7 +11,7 @@ export default function SetDetail() {
 
   if (!set) {
     return (
-      <div className="bg-[#08070f] min-h-screen">
+      <div className="bg-[#0a0f1e] min-h-screen">
         <main className="max-w-5xl mx-auto px-4 py-16 flex flex-col items-center text-center">
           <p className="text-zinc-400 text-lg mb-4">Set not found.</p>
           <button
@@ -28,22 +28,22 @@ export default function SetDetail() {
   const createdDate = new Date(set.createdAt).toLocaleDateString()
 
   return (
-    <div className="bg-[#08070f] min-h-screen">
+    <div className="bg-[#0a0f1e] min-h-screen">
       <main className="max-w-2xl mx-auto px-4 py-8">
         <button
           onClick={() => navigate('/')}
-          className="mb-6 text-sm text-[#a78bfa]/70 hover:text-[#a78bfa] transition-colors"
+          className="mb-6 text-sm text-[#60a5fa]/70 hover:text-[#60a5fa] transition-colors"
         >
           ← My Sets
         </button>
 
         <h1 className="text-4xl font-bold text-white mb-2 ff-heading" style={{ fontFamily: "'Syne', sans-serif" }}>{set.name}</h1>
-        <div className="flex gap-4 text-sm text-[#a78bfa]/40 mb-10">
+        <div className="flex gap-4 text-sm text-[#60a5fa]/40 mb-10">
           <span>{set.cards.length} cards</span>
           <span>Created {createdDate}</span>
         </div>
 
-        <h2 className="text-xs uppercase tracking-widest text-[#a78bfa]/50 font-medium mb-4">Choose a study mode</h2>
+        <h2 className="text-xs uppercase tracking-widest text-[#60a5fa]/50 font-medium mb-4">Choose a study mode</h2>
         <ModeGrid />
       </main>
     </div>

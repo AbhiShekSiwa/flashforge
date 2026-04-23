@@ -19,14 +19,14 @@ export default function Home() {
   })
 
   return (
-    <div className="bg-[#08070f] min-h-screen">
+    <div className="bg-[#0a0f1e] min-h-screen">
       <main className="max-w-5xl mx-auto px-4 py-8 relative">
-        <div className="absolute inset-0 pointer-events-none" style={{background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(124,58,237,0.12) 0%, transparent 70%)'}} />
+        <div className="absolute inset-0 pointer-events-none" style={{background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(37,99,235,0.12) 0%, transparent 70%)'}} />
         <div className="flex items-center justify-between mb-8 relative">
           <h1 className="text-3xl font-bold text-white ff-heading" style={{ fontFamily: "'Syne', sans-serif" }}>My Sets</h1>
           <button
             onClick={() => navigate('/import')}
-            className="h-10 px-4 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium transition-colors shadow-lg shadow-violet-900/30 border-0"
+            className="h-10 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors shadow-lg shadow-blue-900/30 border-0"
           >
             + Import Set
           </button>
@@ -41,7 +41,7 @@ export default function Home() {
             </p>
             <button
               onClick={() => navigate('/import')}
-              className="h-10 px-6 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium transition-colors shadow-lg shadow-violet-900/30 border-0"
+              className="h-10 px-6 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors shadow-lg shadow-blue-900/30 border-0"
             >
               Import your first set
             </button>

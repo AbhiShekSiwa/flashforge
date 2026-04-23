@@ -83,7 +83,7 @@ export default function Flashcards() {
 
   if (!set || total === 0) {
     return (
-      <div className="bg-[#08070f] min-h-screen">
+      <div className="bg-[#0a0f1e] min-h-screen">
         <main className="max-w-2xl mx-auto px-4 py-16 text-center">
           <p className="text-zinc-400 mb-4">{!set ? 'Set not found.' : 'This set has no cards.'}</p>
           <button
@@ -99,7 +99,7 @@ export default function Flashcards() {
 
   if (done) {
     return (
-      <div className="bg-[#08070f] min-h-screen">
+      <div className="bg-[#0a0f1e] min-h-screen">
         <main className="max-w-2xl mx-auto px-4 py-16 flex flex-col items-center text-center">
           <p className="text-5xl mb-4">🎉</p>
           <h1 className="text-2xl font-bold text-white mb-2">
@@ -108,20 +108,20 @@ export default function Flashcards() {
           <div className="flex gap-3 mt-8">
             <button
               onClick={studyAgain}
-              className="h-10 px-5 rounded-lg border border-[rgba(167,139,250,0.3)] text-[#a78bfa] hover:bg-violet-900/20 transition-colors font-medium text-sm"
+              className="h-10 px-5 rounded-lg border border-[rgba(96,165,250,0.3)] text-[#60a5fa] hover:bg-blue-900/20 transition-colors font-medium text-sm"
             >
               Study Again
             </button>
             <button
               onClick={shuffleAndRestart}
-              className="h-10 px-5 rounded-lg bg-violet-600 text-white hover:bg-violet-500 transition-colors font-medium text-sm shadow-lg shadow-violet-900/40"
+              className="h-10 px-5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-sm shadow-lg shadow-blue-900/40"
             >
               Shuffle & Restart
             </button>
           </div>
           <button
             onClick={() => navigate(-1)}
-            className="mt-6 text-sm text-[#a78bfa]/50 hover:text-[#a78bfa] transition-colors"
+            className="mt-6 text-sm text-[#60a5fa]/50 hover:text-[#60a5fa] transition-colors"
           >
             ← Back to Set
           </button>
@@ -131,12 +131,12 @@ export default function Flashcards() {
   }
 
   return (
-    <div className="bg-[#08070f] min-h-screen">
+    <div className="bg-[#0a0f1e] min-h-screen">
       <main className="max-w-2xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => navigate(-1)}
-            className="text-sm text-[#a78bfa]/70 hover:text-[#a78bfa] transition-colors"
+            className="text-sm text-[#60a5fa]/70 hover:text-[#60a5fa] transition-colors"
           >
             ← Back
           </button>
@@ -145,8 +145,8 @@ export default function Flashcards() {
           </span>
           <button
             onClick={toggleShuffle}
-            className={`h-8 px-3 rounded-lg text-sm font-medium transition-colors border border-[rgba(167,139,250,0.3)] text-[#a78bfa] text-sm px-3 py-1.5 rounded-lg hover:bg-violet-900/20 ${
-              isShuffled ? 'bg-violet-900/20' : ''
+            className={`h-8 px-3 rounded-lg text-sm font-medium transition-colors border border-[rgba(96,165,250,0.3)] text-[#60a5fa] text-sm px-3 py-1.5 rounded-lg hover:bg-blue-900/20 ${
+              isShuffled ? 'bg-blue-900/20' : ''
             }`}
           >
             🔀 Shuffle
@@ -171,14 +171,14 @@ export default function Flashcards() {
           <button
             onClick={goPrev}
             disabled={currentPos === 0}
-            className="border border-[rgba(167,139,250,0.3)] text-[#a78bfa] hover:bg-violet-900/20 px-6 py-2.5 rounded-xl transition-all font-medium text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+            className="border border-[rgba(96,165,250,0.3)] text-[#60a5fa] hover:bg-blue-900/20 px-6 py-2.5 rounded-xl transition-all font-medium text-sm disabled:opacity-30 disabled:cursor-not-allowed"
           >
             ← Prev
           </button>
           <button
             onClick={toggleStar}
             className={`text-2xl leading-none transition-colors ${
-              isStarred ? 'text-[#a78bfa]' : 'text-zinc-600 hover:text-zinc-400'
+              isStarred ? 'text-[#60a5fa]' : 'text-zinc-600 hover:text-zinc-400'
             }`}
             aria-label="Star this card"
           >
@@ -186,7 +186,7 @@ export default function Flashcards() {
           </button>
           <button
             onClick={goNext}
-            className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-violet-900/40 text-sm"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/40 text-sm"
           >
             {isLast ? 'Finish' : 'Next →'}
           </button>

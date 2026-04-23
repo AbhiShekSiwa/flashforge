@@ -304,7 +304,7 @@ export default function Blast() {
       if (idx === clickedIdx && feedbackType === 'wrong')
         return `${base} bg-red-500 border-red-300 text-white`
     }
-    return `${base} bg-gray-700 border-gray-500 text-gray-100 hover:bg-gray-600 hover:border-indigo-400`
+    return `${base} bg-gray-700 border-gray-500 text-gray-100 hover:bg-gray-600 hover:border-blue-400`
   }
 
   // ── High score for settings screen ──────────────────────────────────────────
@@ -367,7 +367,7 @@ export default function Blast() {
                     onClick={() => setDirection(opt.val)}
                     className={`py-3 px-2 rounded-xl border-2 text-sm font-medium transition-all ${
                       direction === opt.val
-                        ? 'border-indigo-500 bg-indigo-900/40 text-white'
+                        ? 'border-blue-500 bg-blue-900/40 text-white'
                         : 'border-gray-700 bg-gray-800/50 text-gray-400 hover:border-gray-500'
                     }`}
                   >
@@ -381,7 +381,7 @@ export default function Blast() {
           <button
             id="start-blast-btn"
             onClick={startGame}
-            className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg transition-colors shadow-lg shadow-indigo-900/50"
+            className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg transition-colors shadow-lg shadow-blue-900/50"
           >
             🚀 Start Blast
           </button>
@@ -436,7 +436,7 @@ export default function Blast() {
             <button
               id="play-again-btn"
               onClick={startGame}
-              className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors"
+              className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors"
             >
               🔄 Play Again
             </button>

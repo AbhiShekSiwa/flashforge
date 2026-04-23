@@ -251,7 +251,7 @@ export default function Test() {
                 onChange={e =>
                   setSettings(prev => ({ ...prev, questionCount: Number(e.target.value) }))
                 }
-                className="flex-1 accent-indigo-500"
+                className="flex-1 accent-blue-500"
               />
               <input
                 type="number"
@@ -263,7 +263,7 @@ export default function Test() {
                   const val = Math.min(totalCards, Math.max(1, Number(e.target.value) || 1))
                   setSettings(prev => ({ ...prev, questionCount: val }))
                 }}
-                className="w-20 text-center bg-zinc-700 text-white border border-zinc-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-20 text-center bg-zinc-700 text-white border border-zinc-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <p className="text-zinc-500 text-xs mt-2">{settings.questionCount} question{settings.questionCount !== 1 ? 's' : ''} · 1 – {totalCards}</p>
@@ -290,7 +290,7 @@ export default function Test() {
                           : prev.enabledTypes.filter(t => t !== opt.value),
                       }))
                     }}
-                    className="w-4 h-4 accent-indigo-500"
+                    className="w-4 h-4 accent-blue-500"
                   />
                   <span className="text-zinc-200">{opt.label}</span>
                 </label>
@@ -319,7 +319,7 @@ export default function Test() {
                     onChange={e =>
                       setSettings(prev => ({ ...prev, direction: e.target.value }))
                     }
-                    className="w-4 h-4 accent-indigo-500"
+                    className="w-4 h-4 accent-blue-500"
                   />
                   <span className="text-zinc-200">{opt.label}</span>
                 </label>
@@ -332,7 +332,7 @@ export default function Test() {
           id="start-test-btn"
           onClick={startTest}
           disabled={noTypesEnabled}
-          className="w-full h-12 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-semibold text-base disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full h-12 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-semibold text-base disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Start Test
         </button>
@@ -378,7 +378,7 @@ export default function Test() {
               id="submit-test-btn"
               onClick={requestSubmit}
               disabled={!allAnswered}
-              className="flex-1 h-10 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 h-10 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Submit Test
             </button>
@@ -492,7 +492,7 @@ export default function Test() {
           <button
             id="retake-test-btn"
             onClick={handleRetakeTest}
-            className="h-10 px-6 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-semibold text-sm"
+            className="h-10 px-6 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-semibold text-sm"
           >
             Retake Test
           </button>
@@ -529,7 +529,7 @@ function QuestionCard({ index, question: q, answer, onAnswer }) {
     <div
       id={`question-${index + 1}`}
       className={`bg-zinc-800 rounded-xl p-5 border transition-colors ${
-        hasAnswer ? 'border-indigo-500/40' : 'border-zinc-700'
+        hasAnswer ? 'border-blue-500/40' : 'border-zinc-700'
       }`}
     >
       {/* Question header */}
@@ -559,7 +559,7 @@ function QuestionCard({ index, question: q, answer, onAnswer }) {
               key={i}
               className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                 answer === opt.value
-                  ? 'bg-indigo-600/30 border border-indigo-500/60'
+                  ? 'bg-blue-600/30 border border-blue-500/60'
                   : 'bg-zinc-700/50 hover:bg-zinc-700 border border-transparent'
               }`}
             >
@@ -569,7 +569,7 @@ function QuestionCard({ index, question: q, answer, onAnswer }) {
                 value={opt.value}
                 checked={answer === opt.value}
                 onChange={() => onAnswer(opt.value)}
-                className="w-4 h-4 accent-indigo-500 shrink-0"
+                className="w-4 h-4 accent-blue-500 shrink-0"
               />
               <span className="text-zinc-200 text-sm">{opt.value}</span>
             </label>
@@ -603,7 +603,7 @@ function QuestionCard({ index, question: q, answer, onAnswer }) {
           value={answer ?? ''}
           onChange={e => onAnswer(e.target.value)}
           placeholder="Type your answer…"
-          className="w-full h-11 px-4 rounded-lg bg-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+          className="w-full h-11 px-4 rounded-lg bg-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         />
       )}
     </div>

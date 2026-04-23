@@ -41,7 +41,7 @@ export default function Import() {
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="e.g. Spanish Vocab Chapter 3"
-            className="w-full h-10 rounded-lg bg-zinc-800 border border-zinc-700 px-4 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            className="w-full h-10 rounded-lg bg-zinc-800 border border-zinc-700 px-4 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-colors"
           />
         </div>
 
@@ -54,7 +54,7 @@ export default function Import() {
             onChange={e => setRawText(e.target.value)}
             rows={8}
             placeholder={"term\tdefinition\napple\ta round fruit\ncat\ta small feline"}
-            className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-zinc-100 placeholder-zinc-500 font-mono text-sm focus:outline-none focus:border-indigo-500 transition-colors resize-y"
+            className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-zinc-100 placeholder-zinc-500 font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors resize-y"
           />
         </div>
 
@@ -100,7 +100,7 @@ export default function Import() {
         <button
           onClick={handleSave}
           disabled={!canSave}
-          className="w-full h-11 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full h-11 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Save Set
         </button>

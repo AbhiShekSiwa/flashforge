@@ -34,10 +34,10 @@ function getStars(mistakes) {
 // tileState: 'default' | 'selected' | 'matched' | 'wrong'
 function tileClass(state) {
   switch (state) {
-    case 'selected': return 'border-2 border-indigo-500 bg-zinc-800 text-white scale-[1.03] shadow-lg shadow-indigo-900/40'
+    case 'selected': return 'border-2 border-blue-500 bg-zinc-800 text-white scale-[1.03] shadow-lg shadow-blue-900/40'
     case 'matched':  return 'border border-green-600 bg-green-900/40 text-green-300 opacity-50 scale-[1.04]'
     case 'wrong':    return 'border border-red-500 bg-red-900/40 text-zinc-200 animate-shake'
-    default:         return 'border border-zinc-700 bg-zinc-800 text-zinc-100 hover:border-indigo-400 hover:bg-zinc-750'
+    default:         return 'border border-zinc-700 bg-zinc-800 text-zinc-100 hover:border-blue-400 hover:bg-zinc-750'
   }
 }
 
@@ -232,7 +232,7 @@ export default function Match() {
           ← Back
         </button>
         <h1 className="text-lg font-semibold text-zinc-100">🔗 Match</h1>
-        <span className="text-sm font-mono text-indigo-300 tabular-nums min-w-[3rem] text-right">
+        <span className="text-sm font-mono text-blue-300 tabular-nums min-w-[3rem] text-right">
           {formatTime(elapsed)}
         </span>
       </div>
@@ -241,7 +241,7 @@ export default function Match() {
       <div className="flex items-center gap-3 mb-6">
         <div className="flex-1 bg-zinc-800 rounded-full h-2 overflow-hidden">
           <div
-            className="h-full bg-indigo-500 transition-all duration-500 rounded-full"
+            className="h-full bg-blue-500 transition-all duration-500 rounded-full"
             style={{ width: `${(matchedCount / roundCardCount.current) * 100}%` }}
           />
         </div>
@@ -317,7 +317,7 @@ export default function Match() {
               <div className="space-y-1 mb-6 text-sm">
                 <p className="text-zinc-300">
                   <span className="text-zinc-500">Time: </span>
-                  <span className="font-semibold text-indigo-300">
+                  <span className="font-semibold text-blue-300">
                     Completed in {formatTime(elapsed)}
                   </span>
                 </p>
@@ -328,7 +328,7 @@ export default function Match() {
                   </span>
                 </p>
                 {mistakes <= 1 && roundCount < totalCards && (
-                  <p className="text-xs text-indigo-400 mt-1">
+                  <p className="text-xs text-blue-400 mt-1">
                     🔥 Nice! Next round adds 2 more cards.
                   </p>
                 )}
@@ -339,7 +339,7 @@ export default function Match() {
                 <button
                   id="next-round-btn"
                   onClick={() => handleNextRound(mistakes, roundCount)}
-                  className="w-full h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-semibold text-sm"
+                  className="w-full h-11 rounded-xl bg-blue-600 text-white hover:bg-blue-500 transition-colors font-semibold text-sm"
                 >
                   Next Round →
                 </button>
@@ -363,7 +363,7 @@ export default function Match() {
         </p>
       )}
       {phase === 'playing' && selectedTerm !== null && (
-        <p className="text-center text-xs text-indigo-400 mt-6">
+        <p className="text-center text-xs text-blue-400 mt-6">
           Now click the matching definition →
         </p>
       )}

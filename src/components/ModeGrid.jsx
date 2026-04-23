@@ -21,11 +21,11 @@ export default function ModeGrid() {
           onClick={() => navigate(`/sets/${id}/${key}`)}
           className="glass-card group flex flex-col items-start gap-2 p-6 hover:scale-[1.03] text-left"
         >
-          <div className="w-12 h-12 rounded-xl bg-violet-900/30 flex items-center justify-center text-2xl mb-3 border border-violet-500/20">
+          <div className="w-12 h-12 rounded-xl bg-blue-900/30 flex items-center justify-center text-2xl mb-3 border border-blue-500/20">
             {icon}
           </div>
           <span className="text-sm font-semibold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>{label}</span>
-          <span className="text-xs text-[#a78bfa]/50">{desc}</span>
+          <span className="text-xs text-[#60a5fa]/50">{desc}</span>
         </button>
       ))}
     </div>

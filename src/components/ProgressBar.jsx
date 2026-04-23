@@ -1,5 +1,5 @@
 const COLOR_MAP = {
-  indigo: 'bg-indigo-500',
+  indigo: 'bg-blue-500',
   green: 'bg-green-500',
   red: 'bg-red-500',
   yellow: 'bg-yellow-500',
@@ -19,7 +19,7 @@ export default function ProgressBar({ value, label, color = 'indigo' }) {
       )}
       <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
         <div
-          className="h-full bg-[#7c3aed] rounded-full transition-all duration-300"
+          className="h-full bg-[#2563eb] rounded-full transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>

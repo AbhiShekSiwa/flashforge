@@ -370,7 +370,7 @@ export default function Learn() {
                     value={option.value}
                     checked={settings.questionType === option.value}
                     onChange={e => setSettings(prev => ({ ...prev, questionType: e.target.value }))}
-                    className="w-4 h-4 accent-indigo-500"
+                    className="w-4 h-4 accent-blue-500"
                   />
                   <span className="ml-3 text-zinc-200">
                     {option.label}
@@ -396,7 +396,7 @@ export default function Learn() {
                     value={option.value}
                     checked={settings.direction === option.value}
                     onChange={e => setSettings(prev => ({ ...prev, direction: e.target.value }))}
-                    className="w-4 h-4 accent-indigo-500"
+                    className="w-4 h-4 accent-blue-500"
                   />
                   <span className="ml-3 text-zinc-200">
                     {option.label}
@@ -414,7 +414,7 @@ export default function Learn() {
                 type="checkbox"
                 checked={settings.starredOnly}
                 onChange={e => setSettings(prev => ({ ...prev, starredOnly: e.target.checked }))}
-                className="w-4 h-4 accent-indigo-500"
+                className="w-4 h-4 accent-blue-500"
               />
               <span className="ml-3 text-zinc-200">⭐ Study starred cards only</span>
             </label>
@@ -429,7 +429,7 @@ export default function Learn() {
         <button
           onClick={startSession}
           disabled={startDisabled}
-          className="w-full h-12 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium text-base disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full h-12 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-base disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Start Learning
         </button>
@@ -510,7 +510,7 @@ export default function Learn() {
         <div className="flex gap-3 justify-center">
           <button
             onClick={() => { markStudied(id); setPhase('complete') }}
-            className="h-10 px-6 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium text-sm"
+            className="h-10 px-6 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-sm"
           >
             Continue
           </button>
@@ -583,7 +583,7 @@ export default function Learn() {
           {unlearnedIndices.length > 0 && (
             <button
               onClick={handleStudyMissedOnly}
-              className="h-10 px-5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium text-sm"
+              className="h-10 px-5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-sm"
             >
               Study Missed Only
             </button>
@@ -764,12 +764,12 @@ export default function Learn() {
                     onKeyDown={e => e.key === 'Enter' && handleTypeSubmit()}
                     placeholder="Type your answer…"
                     autoFocus
-                    className="w-full h-12 px-4 rounded-lg bg-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full h-12 px-4 rounded-lg bg-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={handleTypeSubmit}
                     disabled={!typedAnswer.trim()}
-                    className="w-full h-10 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-10 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Check Answer
                   </button>
