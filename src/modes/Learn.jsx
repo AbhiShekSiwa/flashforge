@@ -106,7 +106,18 @@ export default function Learn() {
       return newCount
     })
 
-    if (!correct) {
+    if (correct) {
+      const stat = cardStats[cardIndex]
+      const newStreak = stat.streak + 1
+      if (newStreak < 2) {
+        setQueue(prev => {
+          const next = [...prev]
+          const insertAt = Math.min(currentPos + 5, next.length)
+          next.splice(insertAt, 0, cardIndex)
+          return next
+        })
+      }
+    } else {
       setQueue(prev => {
         const next = [...prev]
         const insertAt = Math.min(currentPos + 4, next.length)
@@ -299,7 +310,8 @@ export default function Learn() {
 
   // ── Completion screen ─────────────────────────────────────────────────────
 
-  const isSessionDone = phase === 'complete' || (queue.length > 0 && currentPos >= queue.length)
+  const allLearned = queue.length > 0 && Object.values(cardStats).every(s => s.learned)
+  const isSessionDone = phase === 'complete' || allLearned
 
   if (isSessionDone) {
     const allLearned = Object.values(cardStats).every(s => s.learned)
