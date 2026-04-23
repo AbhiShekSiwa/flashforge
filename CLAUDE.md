@@ -170,6 +170,13 @@ No API calls, no auth, no server. If it can't be done in localStorage, it's out 
 
 ---
 
+## Standing Rule — Doc Sync
+After completing ANY task that modifies component files, styling, or project structure:
+1. Re-read all files in .claude/context/ that are relevant to what changed
+2. Update any stale facts in those docs to match the new reality
+3. Do this as the final step of every task, without being asked
+
+
 *Last updated: April 2026*
 *Stack: React 18, Vite 5, Tailwind CSS v3, React Router v6, Node 20 LTS*
 
