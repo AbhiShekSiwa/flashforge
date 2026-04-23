@@ -11,12 +11,14 @@ export default function Learn() {
   const { sets, markStudied } = useSets()
   const set = sets.find(s => s.id === id)
 
-  const [showSettings, setShowSettings] = useState(true)
   const [settings, setSettings] = useState({
     questionType: 'mixed',
     direction: 'term-to-def',
     starredOnly: false,
   })
+
+  // Drawer state
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Core session state
   const [queue, setQueue] = useState([])
@@ -68,7 +70,6 @@ export default function Learn() {
   // options and tfData are SET here — must NOT be in the dependency array
   // set and cardStats omitted from deps to avoid object identity loops
   useEffect(() => {
-    if (showSettings) return
     if (queue.length === 0) return
     if (currentPos >= queue.length) return
     if (phase !== 'question') return
@@ -85,7 +86,13 @@ export default function Learn() {
       ? shuffle(otherCards)[0][dir === 'term-to-def' ? 'definition' : 'term']
       : correctVal
     setTfData({ isTrue, shownDef: isTrue ? correctVal : wrongVal, correctDef: correctVal })
-  }, [currentPos, phase, showSettings, queue.length])
+  }, [currentPos, phase, queue.length])
+
+  // Auto-start session on mount
+  useEffect(() => {
+    startSession()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -171,7 +178,6 @@ export default function Learn() {
     setIsCorrect(null)
     setTypedAnswer('')
     setShowSkipBadge(false)
-    setShowSettings(false)
   }
 
   const handleAnswer = (correct) => {
@@ -333,111 +339,7 @@ export default function Learn() {
     resetSessionState(shuffled, newStats)
   }
 
-  // ── Settings screen ───────────────────────────────────────────────────────
-
-  if (showSettings) {
-    const hasStarred = starredCards.length > 0
-    const startDisabled = settings.starredOnly && !hasStarred
-
-    return (
-      <main className="max-w-2xl mx-auto px-4 py-12">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors mb-8"
-        >
-          ← Back
-        </button>
-
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-zinc-100 mb-2">🧠 Learn — Settings</h1>
-          <p className="text-zinc-400 text-sm mb-8">Customize your learning session</p>
-        </div>
-
-        <div className="bg-zinc-800 rounded-lg p-6 space-y-8 mb-8">
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Question Type</h2>
-            <div className="space-y-3">
-              {[
-                { value: 'mc', label: 'Multiple Choice only' },
-                { value: 'tta', label: 'Type the Answer only' },
-                { value: 'tf', label: 'True/False only' },
-                { value: 'mixed', label: 'Mixed (all three alternating)', isDefault: true },
-              ].map(option => (
-                <label key={option.value} className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="questionType"
-                    value={option.value}
-                    checked={settings.questionType === option.value}
-                    onChange={e => setSettings(prev => ({ ...prev, questionType: e.target.value }))}
-                    className="w-4 h-4 accent-blue-500"
-                  />
-                  <span className="ml-3 text-zinc-200">
-                    {option.label}
-                    {option.isDefault && <span className="text-zinc-400 text-sm ml-1">(default)</span>}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Direction</h2>
-            <div className="space-y-3">
-              {[
-                { value: 'term-to-def', label: 'Term → Definition', isDefault: true },
-                { value: 'def-to-term', label: 'Definition → Term' },
-                { value: 'mixed', label: 'Mixed' },
-              ].map(option => (
-                <label key={option.value} className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="direction"
-                    value={option.value}
-                    checked={settings.direction === option.value}
-                    onChange={e => setSettings(prev => ({ ...prev, direction: e.target.value }))}
-                    className="w-4 h-4 accent-blue-500"
-                  />
-                  <span className="ml-3 text-zinc-200">
-                    {option.label}
-                    {option.isDefault && <span className="text-zinc-400 text-sm ml-1">(default)</span>}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Options</h2>
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.starredOnly}
-                onChange={e => setSettings(prev => ({ ...prev, starredOnly: e.target.checked }))}
-                className="w-4 h-4 accent-blue-500"
-              />
-              <span className="ml-3 text-zinc-200">⭐ Study starred cards only</span>
-            </label>
-            {settings.starredOnly && !hasStarred && (
-              <p className="mt-2 text-sm text-yellow-400 ml-7">
-                No starred cards yet — star cards during your session to use this feature
-              </p>
-            )}
-          </div>
-        </div>
-
-        <button
-          onClick={startSession}
-          disabled={startDisabled}
-          className="w-full h-12 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-base disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Start Learning
-        </button>
-      </main>
-    )
-  }
-
-  // ── Post-settings render guards ───────────────────────────────────────────
+  // ── Post-mount render guards ───────────────────────────────────────────
 
   if (!set || !set.cards || set.cards.length === 0) {
     return (
@@ -608,7 +510,7 @@ export default function Learn() {
   const cardIndex = queue[currentPos]
   const currentCard = set.cards[cardIndex]
 
-  if (!showSettings && queue.length > 0 && !currentCard) {
+  if (queue.length > 0 && !currentCard) {
     return null
   }
 
@@ -635,6 +537,15 @@ export default function Learn() {
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8">
+      {/* Floating settings button */}
+      <button
+        onClick={() => setSettingsOpen(true)}
+        style={{ position: 'fixed', top: '5rem', right: '1.5rem', zIndex: 50 }}
+        className="flex items-center justify-center w-10 h-10 rounded-xl border border-blue-500/30 text-blue-400 hover:bg-blue-900/20 hover:border-blue-500/50 transition-all backdrop-blur-sm bg-black/30"
+      >
+        ⚙
+      </button>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -879,6 +790,99 @@ export default function Learn() {
           </div>
         )}
       </div>
+
+      {/* Settings drawer */}
+      {settingsOpen && (
+        <>
+          <div
+            onClick={() => setSettingsOpen(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50 }}
+          />
+          <div style={{
+            position: 'fixed', top: 0, right: 0, height: '100vh', width: '300px',
+            zIndex: 51, background: '#111827', borderLeft: '1px solid rgba(96,165,250,0.2)',
+            padding: '1.5rem', overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <span style={{ color: 'white', fontWeight: 600, fontSize: '1rem' }}>Settings</span>
+              <button onClick={() => setSettingsOpen(false)} style={{ color: '#60a5fa', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-300 mb-3">Question Type</h2>
+                <div className="space-y-2">
+                  {[
+                    { value: 'mc', label: 'Multiple Choice only' },
+                    { value: 'tta', label: 'Type the Answer only' },
+                    { value: 'tf', label: 'True/False only' },
+                    { value: 'mixed', label: 'Mixed (all three)' },
+                  ].map(option => (
+                    <label key={option.value} className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="questionType"
+                        value={option.value}
+                        checked={settings.questionType === option.value}
+                        onChange={e => setSettings(prev => ({ ...prev, questionType: e.target.value }))}
+                        className="w-4 h-4 accent-blue-500"
+                      />
+                      <span className="ml-3 text-zinc-300 text-sm">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-300 mb-3">Direction</h2>
+                <div className="space-y-2">
+                  {[
+                    { value: 'term-to-def', label: 'Term → Definition' },
+                    { value: 'def-to-term', label: 'Definition → Term' },
+                    { value: 'mixed', label: 'Mixed' },
+                  ].map(option => (
+                    <label key={option.value} className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="direction"
+                        value={option.value}
+                        checked={settings.direction === option.value}
+                        onChange={e => setSettings(prev => ({ ...prev, direction: e.target.value }))}
+                        className="w-4 h-4 accent-blue-500"
+                      />
+                      <span className="ml-3 text-zinc-300 text-sm">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-300 mb-3">Options</h2>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.starredOnly}
+                    onChange={e => setSettings(prev => ({ ...prev, starredOnly: e.target.checked }))}
+                    className="w-4 h-4 accent-blue-500"
+                  />
+                  <span className="ml-3 text-zinc-300 text-sm">⭐ Starred cards only</span>
+                </label>
+                {settings.starredOnly && starredCards.length === 0 && (
+                  <p className="mt-2 text-xs text-yellow-400 ml-7">No starred cards yet</p>
+                )}
+                <p className="mt-3 text-xs text-zinc-500">Direction and type apply immediately. Restart to apply starred filter.</p>
+              </div>
+
+              <button
+                onClick={() => { startSession(); setSettingsOpen(false) }}
+                className="w-full h-10 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-sm"
+              >
+                Restart with These Settings
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </main>
   )
 }
