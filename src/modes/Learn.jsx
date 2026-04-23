@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useSets } from '../hooks/useSets.js'
 import ProgressBar from '../components/ProgressBar.jsx'
@@ -10,6 +10,11 @@ export default function Learn() {
   const navigate = useNavigate()
   const { sets, markStudied } = useSets()
   const set = sets.find(s => s.id === id)
+
+  // BUG 3: Settings screen state
+  const [showSettings, setShowSettings] = useState(true)
+  const [selectedQuestionType, setSelectedQuestionType] = useState('mixed')
+  const [selectedDirection, setSelectedDirection] = useState('term')
 
   const [sessionState, setSessionState] = useState(() => {
     if (!set || set.cards.length === 0) return null
@@ -41,6 +46,90 @@ export default function Learn() {
   const [feedbackIsCorrect, setFeedbackIsCorrect] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [cardDirections, setCardDirections] = useState({})
+  // BUG 1: Store generated options per card to prevent reshuffling
+  const [cardOptions, setCardOptions] = useState({})
+
+  // BUG 3: Settings screen UI
+  if (showSettings) {
+    return (
+      <main className="max-w-2xl mx-auto px-4 py-12">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors mb-8"
+        >
+          ← Back
+        </button>
+
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-zinc-100 mb-2">🧠 Learn — Settings</h1>
+          <p className="text-zinc-400 text-sm mb-8">Customize your learning session</p>
+        </div>
+
+        <div className="bg-zinc-800 rounded-lg p-6 space-y-8 mb-8">
+          {/* Question Type Selector */}
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Question Type</h2>
+            <div className="space-y-3">
+              {[
+                { value: 'mc', label: 'Multiple Choice only' },
+                { value: 'tta', label: 'Type the Answer only' },
+                { value: 'mixed', label: 'Mixed (alternating)', default: true },
+              ].map(option => (
+                <label key={option.value} className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="questionType"
+                    value={option.value}
+                    checked={selectedQuestionType === option.value}
+                    onChange={e => setSelectedQuestionType(e.target.value)}
+                    className="w-4 h-4 accent-indigo-500"
+                  />
+                  <span className="ml-3 text-zinc-200">
+                    {option.label}
+                    {option.default && <span className="text-zinc-400 text-sm ml-1">(default)</span>}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Direction Selector */}
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Direction</h2>
+            <div className="space-y-3">
+              {[
+                { value: 'term', label: 'Term → Definition', default: true },
+                { value: 'definition', label: 'Definition → Term' },
+                { value: 'mixed', label: 'Mixed' },
+              ].map(option => (
+                <label key={option.value} className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="direction"
+                    value={option.value}
+                    checked={selectedDirection === option.value}
+                    onChange={e => setSelectedDirection(e.target.value)}
+                    className="w-4 h-4 accent-indigo-500"
+                  />
+                  <span className="ml-3 text-zinc-200">
+                    {option.label}
+                    {option.default && <span className="text-zinc-400 text-sm ml-1">(default)</span>}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowSettings(false)}
+          className="w-full h-12 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium text-base"
+        >
+          Start Learning
+        </button>
+      </main>
+    )
+  }
 
   if (!set || !set.cards || set.cards.length === 0) {
     return (
@@ -69,14 +158,22 @@ export default function Learn() {
   const { queue, cardStats, learnedCount, totalCards, currentQueuePos, sessionComplete, completedByEndButton = false, originalTotalCards = totalCards } = sessionState
 
   function getQuestionType(cardIndex) {
+    // BUG 1 & 3: Respect user settings instead of adaptive logic
+    if (selectedQuestionType === 'mc') return 'mc'
+    if (selectedQuestionType === 'tta') return 'tta'
+
+    // Mixed mode: alternate based on timesShown
     const stats = cardStats[cardIndex]
     if (stats.timesShown === 0) return 'mc'
-    if (stats.streak === 0 || stats.timesShown % 2 === 1) return 'tta'
+    if (stats.timesShown % 2 === 1) return 'tta'
     return 'mc'
   }
 
   function getRandomDirection() {
-    return Math.random() < 0.5
+    // BUG 3: Respect user settings
+    if (selectedDirection === 'term') return true
+    if (selectedDirection === 'definition') return false
+    return Math.random() < 0.5 // mixed
   }
 
   function generateOptions(correctCard, cardIndex, isTermFirst) {
@@ -92,6 +189,21 @@ export default function Learn() {
 
     return shuffle(options)
   }
+
+  // BUG 1: Generate options once per card and store in state to prevent reshuffling
+  useEffect(() => {
+    if (queue.length > 0 && currentQueuePos < queue.length) {
+      const idx = queue[currentQueuePos]
+      if (!cardOptions.hasOwnProperty(idx)) {
+        const card = set.cards[idx]
+        const isTermFirst = cardDirections[idx]
+        if (isTermFirst !== undefined) {
+          const options = generateOptions(card, idx, isTermFirst)
+          setCardOptions(prev => ({ ...prev, [idx]: options }))
+        }
+      }
+    }
+  }, [currentQueuePos, queue, cardDirections, cardOptions, set.cards])
 
   function handleMCSelection(option) {
     if (isProcessing) return
@@ -133,17 +245,23 @@ export default function Learn() {
 
     setFeedbackMsg(message)
     setFeedbackIsCorrect(isCorrect)
-    if (isCorrect) {
-      setTimeout(() => {
-        handleAnswer(true)
-        setIsProcessing(false)
-      }, 1200)
-    }
+    // BUG 2: Set timeout for both correct and incorrect answers to ensure consistent advancement
+    setTimeout(() => {
+      handleAnswer(isCorrect)
+      setIsProcessing(false)
+    }, isCorrect ? 1200 : 1500)
   }
 
   function handleAnswer(isCorrect) {
     const currentCardIndex = queue[currentQueuePos]
     const newStats = { ...cardStats }
+
+    // BUG 2: Ensure state is reset immediately for proper card advancement
+    setIsShowingAnswer(false)
+    setSelectedOption(null)
+    setUserInput('')
+    setFeedbackMsg('')
+    setFeedbackIsCorrect(false)
 
     if (isCorrect) {
       newStats[currentCardIndex].streak++
@@ -175,12 +293,6 @@ export default function Learn() {
 
       setSessionState(prev => ({ ...prev, queue: newQueue, cardStats: newStats }))
     }
-
-    setIsShowingAnswer(false)
-    setSelectedOption(null)
-    setUserInput('')
-    setFeedbackMsg('')
-    setFeedbackIsCorrect(false)
   }
 
   function handleEndSession() {
@@ -377,7 +489,7 @@ export default function Learn() {
             <div className="text-3xl font-bold text-zinc-100 mb-8">{question}</div>
 
             <div className="grid grid-cols-2 gap-4">
-              {generateOptions(currentCard, currentCardIndex, isTermFirst).map((option, idx) => (
+              {cardOptions[currentCardIndex] && cardOptions[currentCardIndex].map((option, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleMCSelection(option)}
@@ -430,11 +542,10 @@ export default function Learn() {
                   Check Answer
                 </button>
               </div>
-            ) : !feedbackIsCorrect ? (
+            ) : feedbackMsg && !feedbackIsCorrect ? (
               <button
                 onClick={() => {
                   handleAnswer(false)
-                  setFeedbackMsg('')
                 }}
                 className="h-10 px-6 rounded-lg bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors font-medium text-sm"
               >
