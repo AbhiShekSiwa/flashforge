@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useSets } from '../hooks/useSets.js'
 import ProgressBar from '../components/ProgressBar.jsx'
@@ -11,65 +11,190 @@ export default function Learn() {
   const { sets, markStudied } = useSets()
   const set = sets.find(s => s.id === id)
 
-  // BUG 3: Settings screen state
   const [showSettings, setShowSettings] = useState(true)
-  const [selectedQuestionType, setSelectedQuestionType] = useState('mixed')
-  const [selectedDirection, setSelectedDirection] = useState('term')
+  const [settings, setSettings] = useState({ questionType: 'mixed', direction: 'term-to-def' })
 
-  const [sessionState, setSessionState] = useState(() => {
-    if (!set || set.cards.length === 0) return null
+  const [queue, setQueue] = useState([])
+  const [currentPos, setCurrentPos] = useState(0)
+  const [cardStats, setCardStats] = useState({})
+  const [learnedCount, setLearnedCount] = useState(0)
+  const [options, setOptions] = useState([])
+  const [phase, setPhase] = useState('question')
+  const [selectedAnswer, setSelectedAnswer] = useState(null)
+  const [isCorrect, setIsCorrect] = useState(null)
+  const [typedAnswer, setTypedAnswer] = useState('')
+  const [showAnswer, setShowAnswer] = useState(false)
 
-    const totalCards = set.cards.length
-    const cardIndices = Array.from({ length: totalCards }, (_, i) => i)
-    const queue = shuffle(cardIndices)
-    const cardStats = {}
-    for (let i = 0; i < totalCards; i++) {
-      cardStats[i] = { streak: 0, timesShown: 0, learned: false }
-    }
-
-    return {
-      queue,
-      cardStats,
-      learnedCount: 0,
-      totalCards,
-      currentQueuePos: 0,
-      sessionComplete: false,
-      completedByEndButton: false,
-      originalTotalCards: totalCards,
-    }
-  })
-
-  const [isShowingAnswer, setIsShowingAnswer] = useState(false)
-  const [selectedOption, setSelectedOption] = useState(null)
-  const [userInput, setUserInput] = useState('')
-  const [feedbackMsg, setFeedbackMsg] = useState('')
-  const [feedbackIsCorrect, setFeedbackIsCorrect] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [cardDirections, setCardDirections] = useState({})
-  // BUG 1: Store generated options per card to prevent reshuffling
-  const [cardOptions, setCardOptions] = useState({})
-
-  const {
-    queue = [],
-    cardStats = {},
-    learnedCount = 0,
-    totalCards = 0,
-    currentQueuePos = 0,
-    sessionComplete = false,
-    completedByEndButton = false,
-    originalTotalCards = 0,
-  } = sessionState || {}
-
-  // Generate card direction once per card index
+  // ONE useEffect — generates MC options for the current card
   useEffect(() => {
-    if (!sessionState || queue.length === 0 || currentQueuePos >= queue.length) return
-    const idx = queue[currentQueuePos]
-    if (!cardDirections.hasOwnProperty(idx)) {
-      setCardDirections(prev => ({ ...prev, [idx]: getRandomDirection() }))
-    }
-  }, [currentQueuePos, queue, sessionState])
+    if (showSettings) return
+    if (queue.length === 0) return
+    if (phase !== 'question') return
+    if (!set) return
+    const cardIndex = queue[currentPos]
+    const card = set.cards[cardIndex]
+    setOptions(generateOptions(card, set.cards, getDirection(currentPos)))
+  }, [currentPos, phase, showSettings, queue.length])
+  // NOTE: options is SET here — must NOT be in the dependency array
+  // NOTE: set and cardStats are not in deps to avoid object identity loops
 
-  // BUG 3: Settings screen UI
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  function getDirection(pos) {
+    if (settings.direction === 'term-to-def') return 'term-to-def'
+    if (settings.direction === 'def-to-term') return 'def-to-term'
+    return pos % 2 === 0 ? 'term-to-def' : 'def-to-term'
+  }
+
+  function generateOptions(card, allCards, direction) {
+    const correctValue = direction === 'term-to-def' ? card.definition : card.term
+    const distractors = shuffle(allCards.filter(c => c !== card))
+      .slice(0, 3)
+      .map(c => ({ value: direction === 'term-to-def' ? c.definition : c.term, isCorrect: false }))
+    return shuffle([{ value: correctValue, isCorrect: true }, ...distractors])
+  }
+
+  function getQuestionType(cardIndex) {
+    const stat = cardStats[cardIndex]
+    if (!stat) return 'mc'
+    if (settings.questionType === 'mc') return 'mc'
+    if (settings.questionType === 'tta') return 'tta'
+    // mixed: first show → mc; after wrong (streak=0, timesShown>0) or odd timesShown → tta
+    if (stat.timesShown === 0) return 'mc'
+    if (stat.streak === 0) return 'tta'
+    return stat.timesShown % 2 === 1 ? 'tta' : 'mc'
+  }
+
+  // ── Session actions ───────────────────────────────────────────────────────
+
+  const startSession = () => {
+    if (!set || set.cards.length === 0) return
+    const shuffled = shuffle([...Array(set.cards.length).keys()])
+    const initialStats = {}
+    shuffled.forEach(i => { initialStats[i] = { streak: 0, timesShown: 0, learned: false } })
+    setQueue(shuffled)
+    setCurrentPos(0)
+    setCardStats(initialStats)
+    setLearnedCount(0)
+    setPhase('question')
+    setOptions([])
+    setShowSettings(false)
+    // useEffect handles option generation after state settles
+  }
+
+  const handleAnswer = (correct) => {
+    const cardIndex = queue[currentPos]
+    setIsCorrect(correct)
+    setPhase('feedback')
+
+    let willLearn = false
+    setCardStats(prev => {
+      const stat = prev[cardIndex]
+      const newStreak = correct ? stat.streak + 1 : 0
+      const learned = newStreak >= 2
+      if (learned && !stat.learned) {
+        willLearn = true
+        setLearnedCount(c => c + 1)
+      }
+      return { ...prev, [cardIndex]: { ...stat, streak: newStreak, timesShown: stat.timesShown + 1, learned } }
+    })
+
+    if (!correct) {
+      setQueue(prev => {
+        const next = [...prev]
+        const insertAt = Math.min(currentPos + 4, next.length)
+        next.splice(insertAt, 0, cardIndex)
+        return next
+      })
+    }
+
+    const delay = correct ? 1200 : 1500
+    setTimeout(() => {
+      setSelectedAnswer(null)
+      setIsCorrect(null)
+      setTypedAnswer('')
+      setShowAnswer(false)
+      setPhase('question')
+      setCurrentPos(prev => prev + 1)
+    }, delay)
+  }
+
+  const handleTypeSubmit = () => {
+    if (!set || queue.length === 0) return
+    const cardIndex = queue[currentPos]
+    const card = set.cards[cardIndex]
+    const dir = getDirection(currentPos)
+    const correctAnswer = dir === 'term-to-def' ? card.definition : card.term
+    const sim = similarity(typedAnswer, correctAnswer)
+
+    if (sim >= 0.8) {
+      setShowAnswer(false)
+      handleAnswer(true)
+    } else if (sim >= 0.6) {
+      setShowAnswer(true)
+      setIsCorrect(true)
+      setPhase('feedback')
+      setTimeout(() => {
+        setSelectedAnswer(null)
+        setIsCorrect(null)
+        setTypedAnswer('')
+        setShowAnswer(false)
+        setPhase('question')
+        setCurrentPos(prev => prev + 1)
+      }, 1200)
+    } else {
+      setShowAnswer(true)
+      setIsCorrect(false)
+      setPhase('feedback')
+      // wrong TTA: wait for user to click "Got it" — no auto-advance
+    }
+  }
+
+  const handleEndSession = () => {
+    markStudied(id)
+    setPhase('complete')
+  }
+
+  const handleRestart = () => {
+    if (!set) return
+    const shuffled = shuffle([...Array(set.cards.length).keys()])
+    const initialStats = {}
+    shuffled.forEach(i => { initialStats[i] = { streak: 0, timesShown: 0, learned: false } })
+    setQueue(shuffled)
+    setCurrentPos(0)
+    setCardStats(initialStats)
+    setLearnedCount(0)
+    setPhase('question')
+    setOptions([])
+    setSelectedAnswer(null)
+    setIsCorrect(null)
+    setTypedAnswer('')
+    setShowAnswer(false)
+  }
+
+  const handleStudyMissedOnly = () => {
+    if (!set) return
+    const unlearned = Object.entries(cardStats)
+      .filter(([, s]) => !s.learned)
+      .map(([i]) => parseInt(i))
+    if (unlearned.length === 0) { handleRestart(); return }
+    const shuffled = shuffle(unlearned)
+    const newStats = {}
+    unlearned.forEach(i => { newStats[i] = { streak: 0, timesShown: 0, learned: false } })
+    setQueue(shuffled)
+    setCurrentPos(0)
+    setCardStats(newStats)
+    setLearnedCount(0)
+    setPhase('question')
+    setOptions([])
+    setSelectedAnswer(null)
+    setIsCorrect(null)
+    setTypedAnswer('')
+    setShowAnswer(false)
+  }
+
+  // ── Settings screen ───────────────────────────────────────────────────────
+
   if (showSettings) {
     return (
       <main className="max-w-2xl mx-auto px-4 py-12">
@@ -86,40 +211,38 @@ export default function Learn() {
         </div>
 
         <div className="bg-zinc-800 rounded-lg p-6 space-y-8 mb-8">
-          {/* Question Type Selector */}
           <div>
             <h2 className="text-lg font-semibold text-zinc-100 mb-4">Question Type</h2>
             <div className="space-y-3">
               {[
                 { value: 'mc', label: 'Multiple Choice only' },
                 { value: 'tta', label: 'Type the Answer only' },
-                { value: 'mixed', label: 'Mixed (alternating)', default: true },
+                { value: 'mixed', label: 'Mixed (alternating)', isDefault: true },
               ].map(option => (
                 <label key={option.value} className="flex items-center cursor-pointer">
                   <input
                     type="radio"
                     name="questionType"
                     value={option.value}
-                    checked={selectedQuestionType === option.value}
-                    onChange={e => setSelectedQuestionType(e.target.value)}
+                    checked={settings.questionType === option.value}
+                    onChange={e => setSettings(prev => ({ ...prev, questionType: e.target.value }))}
                     className="w-4 h-4 accent-indigo-500"
                   />
                   <span className="ml-3 text-zinc-200">
                     {option.label}
-                    {option.default && <span className="text-zinc-400 text-sm ml-1">(default)</span>}
+                    {option.isDefault && <span className="text-zinc-400 text-sm ml-1">(default)</span>}
                   </span>
                 </label>
               ))}
             </div>
           </div>
 
-          {/* Direction Selector */}
           <div>
             <h2 className="text-lg font-semibold text-zinc-100 mb-4">Direction</h2>
             <div className="space-y-3">
               {[
-                { value: 'term', label: 'Term → Definition', default: true },
-                { value: 'definition', label: 'Definition → Term' },
+                { value: 'term-to-def', label: 'Term → Definition', isDefault: true },
+                { value: 'def-to-term', label: 'Definition → Term' },
                 { value: 'mixed', label: 'Mixed' },
               ].map(option => (
                 <label key={option.value} className="flex items-center cursor-pointer">
@@ -127,13 +250,13 @@ export default function Learn() {
                     type="radio"
                     name="direction"
                     value={option.value}
-                    checked={selectedDirection === option.value}
-                    onChange={e => setSelectedDirection(e.target.value)}
+                    checked={settings.direction === option.value}
+                    onChange={e => setSettings(prev => ({ ...prev, direction: e.target.value }))}
                     className="w-4 h-4 accent-indigo-500"
                   />
                   <span className="ml-3 text-zinc-200">
                     {option.label}
-                    {option.default && <span className="text-zinc-400 text-sm ml-1">(default)</span>}
+                    {option.isDefault && <span className="text-zinc-400 text-sm ml-1">(default)</span>}
                   </span>
                 </label>
               ))}
@@ -142,27 +265,7 @@ export default function Learn() {
         </div>
 
         <button
-          onClick={() => {
-            if (!sessionState && set && set.cards.length > 0) {
-              const totalCards = set.cards.length
-              const cardIndices = Array.from({ length: totalCards }, (_, i) => i)
-              const newCardStats = {}
-              for (let i = 0; i < totalCards; i++) {
-                newCardStats[i] = { streak: 0, timesShown: 0, learned: false }
-              }
-              setSessionState({
-                queue: shuffle(cardIndices),
-                cardStats: newCardStats,
-                learnedCount: 0,
-                totalCards,
-                currentQueuePos: 0,
-                sessionComplete: false,
-                completedByEndButton: false,
-                originalTotalCards: totalCards,
-              })
-            }
-            setShowSettings(false)
-          }}
+          onClick={startSession}
           className="w-full h-12 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium text-base"
         >
           Start Learning
@@ -171,12 +274,12 @@ export default function Learn() {
     )
   }
 
+  // ── Post-settings render guards ───────────────────────────────────────────
+
   if (!set || !set.cards || set.cards.length === 0) {
     return (
       <main className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <p className="text-zinc-400 mb-4">
-          {!set ? 'Set not found.' : 'This set has no cards.'}
-        </p>
+        <p className="text-zinc-400 mb-4">{!set ? 'Set not found.' : 'This set has no cards.'}</p>
         <button
           onClick={() => navigate('/')}
           className="h-10 px-4 rounded-lg bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors font-medium text-sm"
@@ -187,225 +290,20 @@ export default function Learn() {
     )
   }
 
-  if (!sessionState) {
-    return (
-      <main className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <p className="text-zinc-400 mb-4">Loading session...</p>
-      </main>
-    )
-  }
+  // ── Completion screen ─────────────────────────────────────────────────────
 
-  function getQuestionType(cardIndex) {
-    // BUG 1 & 3: Respect user settings instead of adaptive logic
-    if (selectedQuestionType === 'mc') return 'mc'
-    if (selectedQuestionType === 'tta') return 'tta'
+  const isSessionDone = phase === 'complete' || (queue.length > 0 && currentPos >= queue.length)
 
-    // Mixed mode: alternate based on timesShown
-    const stats = cardStats[cardIndex]
-    if (stats.timesShown === 0) return 'mc'
-    if (stats.timesShown % 2 === 1) return 'tta'
-    return 'mc'
-  }
-
-  function getRandomDirection() {
-    // BUG 3: Respect user settings
-    if (selectedDirection === 'term') return true
-    if (selectedDirection === 'definition') return false
-    return Math.random() < 0.5 // mixed
-  }
-
-  function generateOptions(correctCard, cardIndex, isTermFirst) {
-    const correctValue = isTermFirst ? correctCard.definition : correctCard.term
-    const options = [{ value: correctValue, isCorrect: true }]
-
-    const otherCards = set.cards.filter((_, i) => i !== cardIndex)
-    const selectedOthers = shuffle(otherCards).slice(0, 3)
-    for (const card of selectedOthers) {
-      const distractorValue = isTermFirst ? card.definition : card.term
-      options.push({ value: distractorValue, isCorrect: false })
-    }
-
-    return shuffle(options)
-  }
-
-  // BUG 1: Generate options once per card and store in state to prevent reshuffling
-  useEffect(() => {
-    if (!set || queue.length === 0 || currentQueuePos >= queue.length) return
-    const idx = queue[currentQueuePos]
-    if (!cardOptions.hasOwnProperty(idx)) {
-      const card = set.cards[idx]
-      const isTermFirst = cardDirections[idx]
-      if (isTermFirst !== undefined) {
-        const options = generateOptions(card, idx, isTermFirst)
-        setCardOptions(prev => ({ ...prev, [idx]: options }))
-      }
-    }
-  }, [currentQueuePos, queue, cardDirections])
-
-  function handleMCSelection(option) {
-    if (isProcessing) return
-    setIsProcessing(true)
-    setSelectedOption(option)
-    setIsShowingAnswer(true)
-
-    const delay = option.isCorrect ? 1200 : 1500
-    setTimeout(() => {
-      handleAnswer(option.isCorrect)
-      setIsProcessing(false)
-    }, delay)
-  }
-
-  function handleTypeAnswer() {
-    if (isProcessing || !userInput.trim()) return
-    setIsProcessing(true)
-
-    const currentCardIndex = queue[currentQueuePos]
-    const currentCard = set.cards[currentCardIndex]
-    const isTermFirst = cardDirections[currentCardIndex]
-
-    const correctAnswer = isTermFirst ? currentCard.definition : currentCard.term
-    const sim = similarity(userInput, correctAnswer)
-
-    let isCorrect = false
-    let message = ''
-
-    if (sim >= 0.8) {
-      isCorrect = true
-      message = '✅ Correct!'
-    } else if (sim >= 0.6) {
-      isCorrect = true
-      message = `✅ Close enough! The exact answer: ${correctAnswer}`
-    } else {
-      isCorrect = false
-      message = `❌ Correct answer: ${correctAnswer}`
-    }
-
-    setFeedbackMsg(message)
-    setFeedbackIsCorrect(isCorrect)
-    // BUG 2: Set timeout for both correct and incorrect answers to ensure consistent advancement
-    setTimeout(() => {
-      handleAnswer(isCorrect)
-      setIsProcessing(false)
-    }, isCorrect ? 1200 : 1500)
-  }
-
-  function handleAnswer(isCorrect) {
-    const currentCardIndex = queue[currentQueuePos]
-    const newStats = { ...cardStats }
-
-    // BUG 2: Ensure state is reset immediately for proper card advancement
-    setIsShowingAnswer(false)
-    setSelectedOption(null)
-    setUserInput('')
-    setFeedbackMsg('')
-    setFeedbackIsCorrect(false)
-
-    if (isCorrect) {
-      newStats[currentCardIndex].streak++
-      newStats[currentCardIndex].timesShown++
-
-      if (newStats[currentCardIndex].streak >= 2) {
-        newStats[currentCardIndex].learned = true
-        const newLearnedCount = learnedCount + 1
-
-        if (newLearnedCount === totalCards) {
-          setSessionState(prev => ({ ...prev, cardStats: newStats, learnedCount: newLearnedCount, sessionComplete: true }))
-        } else {
-          const newQueue = queue.filter((_, i) => i !== currentQueuePos)
-          setSessionState(prev => ({ ...prev, queue: newQueue, cardStats: newStats, learnedCount: newLearnedCount, currentQueuePos: 0 }))
-        }
-      } else {
-        const newQueue = [...queue]
-        newQueue.push(newQueue.splice(currentQueuePos, 1)[0])
-        setSessionState(prev => ({ ...prev, queue: newQueue, cardStats: newStats }))
-      }
-    } else {
-      newStats[currentCardIndex].streak = 0
-      newStats[currentCardIndex].timesShown++
-
-      const newQueue = [...queue]
-      const card = newQueue.splice(currentQueuePos, 1)[0]
-      const insertPos = Math.min(currentQueuePos + 4, newQueue.length)
-      newQueue.splice(insertPos, 0, card)
-
-      setSessionState(prev => ({ ...prev, queue: newQueue, cardStats: newStats }))
-    }
-  }
-
-  function handleEndSession() {
-    setSessionState(prev => ({ ...prev, sessionComplete: true, completedByEndButton: true }))
-  }
-
-  function handleRestart() {
-    const cardIndices = Array.from({ length: set.cards.length }, (_, i) => i)
-    const newCardStats = {}
-    for (let i = 0; i < set.cards.length; i++) {
-      newCardStats[i] = { streak: 0, timesShown: 0, learned: false }
-    }
-
-    setSessionState({
-      queue: shuffle(cardIndices),
-      cardStats: newCardStats,
-      learnedCount: 0,
-      totalCards: set.cards.length,
-      currentQueuePos: 0,
-      sessionComplete: false,
-      completedByEndButton: false,
-      originalTotalCards: set.cards.length,
-    })
-  }
-
-  function handleStudyMissedOnly() {
-    const unlearned = Object.entries(cardStats)
-      .filter(([_, stats]) => !stats.learned)
-      .map(([idx]) => parseInt(idx))
-
-    if (unlearned.length === 0) {
-      handleRestart()
-      return
-    }
-
-    const newCardStats = {}
-    for (let i = 0; i < totalCards; i++) {
-      if (unlearned.includes(i)) {
-        newCardStats[i] = { streak: 0, timesShown: 0, learned: false }
-      } else {
-        newCardStats[i] = cardStats[i]
-      }
-    }
-
-    setSessionState({
-      queue: shuffle(unlearned),
-      cardStats: newCardStats,
-      learnedCount: 0,
-      totalCards: unlearned.length,
-      currentQueuePos: 0,
-      sessionComplete: false,
-      completedByEndButton: false,
-      originalTotalCards: set.cards.length,
-    })
-  }
-
-  useEffect(() => {
-    if (sessionComplete) {
-      markStudied(id)
-    }
-  }, [sessionComplete, id, markStudied])
-
-  if (sessionComplete) {
-    const learnedCards = Object.entries(cardStats)
-      .filter(([_, stats]) => stats.learned)
-      .map(([idx]) => parseInt(idx))
-    const unlearnedCards = Object.entries(cardStats)
-      .filter(([_, stats]) => !stats.learned)
-      .map(([idx]) => parseInt(idx))
-
-    const isMissedOnly = originalTotalCards !== set.cards.length
-    const allCardsLearned = Object.values(cardStats).every(stats => stats.learned)
-    const allLearned = allCardsLearned && !completedByEndButton
+  if (isSessionDone) {
+    const allLearned = Object.values(cardStats).every(s => s.learned)
+    const endedEarly = phase === 'complete' && !allLearned
+    const totalCards = set.cards.length
     const completionMsg = allLearned
-      ? `🎉 You've mastered all ${originalTotalCards} cards!`
+      ? `🎉 You've mastered all ${totalCards} cards!`
       : `Session ended — ${learnedCount} of ${totalCards} learned`
+    const unlearnedIndices = Object.entries(cardStats)
+      .filter(([, s]) => !s.learned)
+      .map(([i]) => parseInt(i))
 
     return (
       <main className="max-w-4xl mx-auto px-4 py-8">
@@ -417,7 +315,7 @@ export default function Learn() {
         </button>
 
         <div className="text-center mb-8">
-          {!isMissedOnly && <p className="text-5xl mb-4">🎉</p>}
+          {allLearned && <p className="text-5xl mb-4">🎉</p>}
           <h1 className="text-2xl font-bold text-zinc-100 mb-2">{completionMsg}</h1>
         </div>
 
@@ -428,14 +326,12 @@ export default function Learn() {
           </div>
           <div className="divide-y divide-zinc-700">
             {set.cards.map((card, i) => {
-              if (isMissedOnly && !unlearnedCards.includes(i)) return null
-              const isLearned = cardStats[i]?.learned
-
+              const learned = cardStats[i]?.learned
               return (
-                <div key={i} className="grid grid-cols-2 gap-4 p-4 text-sm hover:bg-zinc-750 transition-colors">
+                <div key={i} className="grid grid-cols-2 gap-4 p-4 text-sm">
                   <div className="text-zinc-300 truncate">{card.term}</div>
-                  <div className={isLearned ? 'text-green-400' : 'text-red-400'}>
-                    {isLearned ? '✅ Learned' : '❌ Not yet'}
+                  <div className={learned ? 'text-green-400' : 'text-red-400'}>
+                    {learned ? '✅ Learned' : '❌ Not yet'}
                   </div>
                 </div>
               )
@@ -450,7 +346,7 @@ export default function Learn() {
           >
             Restart
           </button>
-          {unlearnedCards.length > 0 && (
+          {unlearnedIndices.length > 0 && (
             <button
               onClick={handleStudyMissedOnly}
               className="h-10 px-5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium text-sm"
@@ -463,30 +359,26 @@ export default function Learn() {
     )
   }
 
-  if (queue.length === 0 || currentQueuePos >= queue.length) {
+  // ── Loading guard ─────────────────────────────────────────────────────────
+
+  if (queue.length === 0 || options.length === 0) {
     return (
       <main className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <p className="text-zinc-400 mb-4">Loading next card...</p>
+        <p className="text-zinc-400">Preparing your session…</p>
       </main>
     )
   }
 
-  const currentCardIndex = queue[currentQueuePos]
-  const currentCard = set.cards[currentCardIndex]
-  const currentStats = cardStats[currentCardIndex]
-  const questionType = getQuestionType(currentCardIndex)
-  const isTermFirst = cardDirections[currentCardIndex]
+  // ── Active session ────────────────────────────────────────────────────────
 
-  if (isTermFirst === undefined || !cardOptions[currentCardIndex]) {
-    return (
-      <main className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <p className="text-zinc-400 mb-4">Preparing question...</p>
-      </main>
-    )
-  }
-
-  const question = isTermFirst ? currentCard.term : currentCard.definition
-  const prompt = isTermFirst ? 'Select the correct definition:' : 'Select the correct term:'
+  const cardIndex = queue[currentPos]
+  const card = set.cards[cardIndex]
+  const dir = getDirection(currentPos)
+  const questionType = getQuestionType(cardIndex)
+  const question = dir === 'term-to-def' ? card.term : card.definition
+  const correctAnswer = dir === 'term-to-def' ? card.definition : card.term
+  const prompt = dir === 'term-to-def' ? 'Select the correct definition:' : 'Select the correct term:'
+  const totalCards = set.cards.length
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8">
@@ -498,7 +390,7 @@ export default function Learn() {
           ← Back
         </button>
         <span className="text-sm font-medium text-zinc-300">
-          {currentQueuePos + 1} / {queue.length}
+          {currentPos + 1} / {queue.length}
         </span>
         <button
           onClick={handleEndSession}
@@ -515,71 +407,96 @@ export default function Learn() {
           <>
             <p className="text-zinc-400 text-sm mb-4">{prompt}</p>
             <div className="text-3xl font-bold text-zinc-100 mb-8">{question}</div>
-
             <div className="grid grid-cols-2 gap-4">
-              {cardOptions[currentCardIndex] && cardOptions[currentCardIndex].map((option, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleMCSelection(option)}
-                  disabled={isShowingAnswer || isProcessing}
-                  className={`p-4 rounded-lg font-medium text-sm transition-all ${
-                    selectedOption === option
-                      ? option.isCorrect
-                        ? 'bg-green-500 text-white'
-                        : 'bg-red-500 text-white'
-                      : isShowingAnswer && option.isCorrect
-                        ? 'bg-green-500 text-white'
-                        : isShowingAnswer
-                          ? 'bg-zinc-600 text-zinc-400'
-                          : 'bg-zinc-700 text-zinc-200 hover:bg-zinc-600'
-                  } ${isShowingAnswer || isProcessing ? 'cursor-default' : 'cursor-pointer'}`}
-                >
-                  {option.value}
-                </button>
-              ))}
+              {options.map((option, idx) => {
+                let bg = 'bg-zinc-700 text-zinc-200 hover:bg-zinc-600'
+                if (selectedAnswer === option) {
+                  bg = option.isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                } else if (phase === 'feedback' && option.isCorrect) {
+                  bg = 'bg-green-500 text-white'
+                } else if (phase === 'feedback') {
+                  bg = 'bg-zinc-600 text-zinc-400'
+                }
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      if (phase !== 'question') return
+                      setSelectedAnswer(option)
+                      handleAnswer(option.isCorrect)
+                    }}
+                    disabled={phase !== 'question'}
+                    className={`p-4 rounded-lg font-medium text-sm transition-all ${bg} ${phase !== 'question' ? 'cursor-default' : 'cursor-pointer'}`}
+                  >
+                    {option.value}
+                  </button>
+                )
+              })}
             </div>
           </>
         ) : (
           <>
-            <div className="text-xl font-semibold text-zinc-400 mb-2">{isTermFirst ? 'Definition' : 'Term'}</div>
+            <p className="text-zinc-400 text-sm mb-4">
+              {dir === 'term-to-def' ? 'Type the definition:' : 'Type the term:'}
+            </p>
             <div className="text-3xl font-bold text-zinc-100 mb-8">{question}</div>
 
-            {feedbackMsg && (
-              <div className="bg-zinc-700 rounded-lg p-4 mb-6 text-center">
-                <p className="text-zinc-200">{feedbackMsg}</p>
+            {showAnswer && (
+              <div className={`rounded-lg p-4 mb-6 text-center ${isCorrect ? 'bg-green-900/40' : 'bg-red-900/40'}`}>
+                <p className="text-zinc-200">
+                  {isCorrect
+                    ? `✅ Close enough! The exact answer: ${correctAnswer}`
+                    : `❌ Correct answer: ${correctAnswer}`}
+                </p>
               </div>
             )}
 
-            {!feedbackMsg ? (
+            {phase === 'question' && (
               <div className="space-y-4">
                 <input
                   type="text"
-                  value={userInput}
-                  onChange={e => setUserInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleTypeAnswer()}
-                  placeholder="Type your answer..."
+                  value={typedAnswer}
+                  onChange={e => setTypedAnswer(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleTypeSubmit()}
+                  placeholder="Type your answer…"
                   autoFocus
-                  disabled={isProcessing}
-                  className="w-full h-12 px-4 rounded-lg bg-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                  className="w-full h-12 px-4 rounded-lg bg-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <button
-                  onClick={handleTypeAnswer}
-                  disabled={!userInput.trim() || isProcessing}
+                  onClick={handleTypeSubmit}
+                  disabled={!typedAnswer.trim()}
                   className="w-full h-10 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Check Answer
                 </button>
               </div>
-            ) : feedbackMsg && !feedbackIsCorrect ? (
+            )}
+
+            {phase === 'feedback' && !isCorrect && (
               <button
                 onClick={() => {
-                  handleAnswer(false)
+                  setCardStats(prev => {
+                    const stat = prev[cardIndex]
+                    return { ...prev, [cardIndex]: { ...stat, streak: 0, timesShown: stat.timesShown + 1 } }
+                  })
+                  setQueue(prev => {
+                    const next = [...prev]
+                    const insertAt = Math.min(currentPos + 4, next.length)
+                    next.splice(insertAt, 0, cardIndex)
+                    return next
+                  })
+                  setSelectedAnswer(null)
+                  setIsCorrect(null)
+                  setTypedAnswer('')
+                  setShowAnswer(false)
+                  setPhase('question')
+                  setCurrentPos(prev => prev + 1)
                 }}
                 className="h-10 px-6 rounded-lg bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors font-medium text-sm"
               >
                 Got it
               </button>
-            ) : null}
+            )}
           </>
         )}
       </div>
