@@ -24,7 +24,7 @@ function ModeErrorBoundary({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-zinc-900 text-zinc-100">
+      <div className="min-h-screen bg-[#0a0f1e] text-zinc-100">
         <NavBar />
         <Routes>
           <Route path="/" element={<Home />} />

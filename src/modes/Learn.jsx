@@ -119,7 +119,7 @@ export default function Learn() {
   function getStagePill(streak) {
     const stage = getStage(streak)
     const styles = {
-      learning: 'bg-red-500/20 text-red-400 border border-red-500/30',
+      learning: 'bg-blue-900/40 text-blue-300 border border-blue-500/20',
       familiar: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
       mastered: 'bg-green-500/20 text-green-400 border border-green-500/30',
     }
@@ -372,7 +372,7 @@ export default function Learn() {
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-zinc-800 rounded-lg p-4">
+          <div className="bg-[#0d1424] rounded-lg p-4">
             <h2 className="text-green-400 font-semibold mb-3 text-sm">
               Mastered ✅ ({masteredEntries.length})
             </h2>
@@ -384,7 +384,7 @@ export default function Learn() {
             </div>
           </div>
 
-          <div className="bg-zinc-800 rounded-lg p-4">
+          <div className="bg-[#0d1424] rounded-lg p-4">
             <h2 className="text-yellow-400 font-semibold mb-3 text-sm">
               Familiar 🟡 ({familiarEntries.length})
             </h2>
@@ -396,7 +396,7 @@ export default function Learn() {
             </div>
           </div>
 
-          <div className="bg-zinc-800 rounded-lg p-4">
+          <div className="bg-[#0d1424] rounded-lg p-4">
             <h2 className="text-red-400 font-semibold mb-3 text-sm">
               Still Learning 🔴 ({learningEntries.length})
             </h2>
@@ -453,7 +453,7 @@ export default function Learn() {
           <h1 className="text-2xl font-bold text-zinc-100 mb-2">{completionMsg}</h1>
         </div>
 
-        <div className="bg-zinc-800 rounded-lg overflow-hidden mb-8">
+        <div className="bg-[#0d1424] rounded-lg overflow-hidden mb-8">
           <div className="grid grid-cols-3 gap-4 p-4 bg-zinc-700 font-medium text-sm text-zinc-200">
             <div>Card</div>
             <div>Stage</div>
@@ -568,7 +568,7 @@ export default function Learn() {
         </div>
         <button
           onClick={handleEndSession}
-          className="text-sm text-red-400 hover:text-red-300 transition-colors"
+          className="text-sm text-blue-400 hover:text-blue-300 transition-colors border border-blue-500/30 px-3 py-1 rounded-lg"
         >
           End Session
         </button>
@@ -621,13 +621,13 @@ export default function Learn() {
               <div className="text-3xl font-bold text-zinc-100 mb-8">{question}</div>
               <div className="grid grid-cols-2 gap-4">
                 {options.map((option, idx) => {
-                  let bg = 'bg-zinc-700 text-zinc-200 hover:bg-zinc-600'
+                  let bg = 'bg-[#0d1424] border border-blue-500/20 text-zinc-200 hover:border-blue-400/60'
                   if (selectedAnswer === option) {
-                    bg = option.isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                    bg = option.isCorrect ? 'bg-green-500 border border-green-400 text-white' : 'bg-red-500 border border-red-400 text-white'
                   } else if (phase === 'feedback' && option.isCorrect) {
-                    bg = 'bg-green-500 text-white'
+                    bg = 'bg-green-500 border border-green-400 text-white'
                   } else if (phase === 'feedback') {
-                    bg = 'bg-zinc-600 text-zinc-400'
+                    bg = 'bg-[#0d1424] border border-zinc-700 text-zinc-500'
                   }
                   return (
                     <button
@@ -675,7 +675,7 @@ export default function Learn() {
                     onKeyDown={e => e.key === 'Enter' && handleTypeSubmit()}
                     placeholder="Type your answer…"
                     autoFocus
-                    className="w-full h-12 px-4 rounded-lg bg-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-12 px-4 rounded-lg bg-[#0d1424] border border-blue-500/20 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={handleTypeSubmit}
@@ -688,9 +688,10 @@ export default function Learn() {
               )}
 
               {phase === 'feedback' && !isCorrect && (
+                <>
+                  <p className="text-sm text-zinc-400 mb-3">Think of the answer, then click Got it if you were right</p>
                 <button
                   onClick={() => {
-                    // Wrong TTA answer — apply demotion logic same as handleAnswer
                     const s = cardStats[cardIndex]
                     const ns = computeNewStreak(s.streak, false)
                     const newLearned = ns >= 3
@@ -716,10 +717,11 @@ export default function Learn() {
                     setPhase('question')
                     setCurrentPos(prev => prev + 1)
                   }}
-                  className="h-10 px-6 rounded-lg bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors font-medium text-sm"
+                  className="h-10 px-6 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors font-medium text-sm"
                 >
                   Got it
                 </button>
+                </>
               )}
             </>
           )}
@@ -732,7 +734,7 @@ export default function Learn() {
               <div className={`rounded-lg p-4 mb-8 ${
                 phase === 'feedback'
                   ? (isCorrect ? 'bg-green-900/30 border border-green-500/30' : 'bg-red-900/30 border border-red-500/30')
-                  : 'bg-zinc-800'
+                  : 'bg-[#0d1424]'
               }`}>
                 <p className="text-zinc-200 text-lg">{tfData.shownDef}</p>
                 {phase === 'feedback' && !isCorrect && (
@@ -748,14 +750,14 @@ export default function Learn() {
                 ].map(({ label, value }) => {
                   const userPicked = selectedAnswer === value
                   const isCorrectChoice = tfData.isTrue === value
-                  let bg = 'bg-zinc-700 text-zinc-200 hover:bg-zinc-600'
+                  let bg = 'bg-[#0d1424] border border-blue-500/20 text-zinc-200 hover:border-blue-400/60'
                   if (phase === 'feedback') {
                     if (userPicked) {
-                      bg = isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                      bg = isCorrect ? 'bg-green-500 border border-green-400 text-white' : 'bg-red-500 border border-red-400 text-white'
                     } else if (isCorrectChoice) {
-                      bg = 'bg-green-500 text-white'
+                      bg = 'bg-green-500 border border-green-400 text-white'
                     } else {
-                      bg = 'bg-zinc-600 text-zinc-400'
+                      bg = 'bg-[#0d1424] border border-zinc-700 text-zinc-500'
                     }
                   }
                   return (
@@ -783,7 +785,7 @@ export default function Learn() {
           <div className="text-center mt-6">
             <button
               onClick={handleSkip}
-              className="text-sm text-zinc-500 hover:text-zinc-400 transition-colors"
+              className="text-sm text-blue-400/60 hover:text-blue-400 transition-colors"
             >
               Skip →
             </button>

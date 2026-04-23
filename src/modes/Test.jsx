@@ -238,7 +238,7 @@ export default function Test() {
           <p className="text-zinc-400 text-sm">Configure your exam before starting</p>
         </div>
 
-        <div className="bg-zinc-800 rounded-xl p-6 space-y-8 mb-8">
+        <div className="bg-[#0d1424] rounded-xl p-6 space-y-8 mb-8 border border-blue-500/10">
           {/* Number of questions slider + number input */}
           <div>
             <h2 className="text-lg font-semibold text-zinc-100 mb-3">Number of Questions</h2>
@@ -369,7 +369,7 @@ export default function Test() {
         </div>
 
         {/* Sticky bottom bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur border-t border-zinc-700 px-4 py-4">
+        <div className="fixed bottom-0 left-0 right-0 bg-[#0a0f1e]/95 backdrop-blur border-t border-blue-500/20 px-4 py-4">
           <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
             <span className="text-sm text-zinc-400 shrink-0">
               {answeredCount} / {questions.length} answered
@@ -528,7 +528,7 @@ function QuestionCard({ index, question: q, answer, onAnswer }) {
   return (
     <div
       id={`question-${index + 1}`}
-      className={`bg-zinc-800 rounded-xl p-5 border transition-colors ${
+      className={`bg-[#0d1424] rounded-xl p-5 border transition-colors ${
         hasAnswer ? 'border-blue-500/40' : 'border-zinc-700'
       }`}
     >

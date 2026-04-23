@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useSets } from '../hooks/useSets.js'
 import { shuffle } from '../utils/shuffle.js'
@@ -7,10 +7,12 @@ import { shuffle } from '../utils/shuffle.js'
 
 function buildRound(cards, count) {
   const picked = shuffle([...cards]).slice(0, count)
-  // Each tile carries an index into `picked` so we can match pairs
-  const terms = shuffle(picked.map((card, idx) => ({ id: idx, text: card.term })))
-  const defs  = shuffle(picked.map((card, idx) => ({ id: idx, text: card.definition })))
-  return { terms, defs }
+  const tiles = []
+  picked.forEach((card, idx) => {
+    tiles.push({ id: idx, text: card.term, type: 'term' })
+    tiles.push({ id: idx, text: card.definition, type: 'def' })
+  })
+  return { tiles: shuffle(tiles), count: picked.length }
 }
 
 // ── Timer helpers ──────────────────────────────────────────────────────────────
@@ -29,16 +31,38 @@ function getStars(mistakes) {
   return 1
 }
 
-// ── Tile state helpers ─────────────────────────────────────────────────────────
+// ── Tile class helper ──────────────────────────────────────────────────────────
 
-// tileState: 'default' | 'selected' | 'matched' | 'wrong'
 function tileClass(state) {
   switch (state) {
-    case 'selected': return 'border-2 border-blue-500 bg-zinc-800 text-white scale-[1.03] shadow-lg shadow-blue-900/40'
-    case 'matched':  return 'border border-green-600 bg-green-900/40 text-green-300 opacity-50 scale-[1.04]'
+    case 'selected': return 'border-2 border-blue-500 bg-blue-900/30 text-white shadow-lg shadow-blue-900/40 scale-[1.03]'
+    case 'matched':  return 'border border-green-600 bg-green-900/40 text-green-300 opacity-40 pointer-events-none'
     case 'wrong':    return 'border border-red-500 bg-red-900/40 text-zinc-200 animate-shake'
-    default:         return 'border border-zinc-700 bg-zinc-800 text-zinc-100 hover:border-blue-400 hover:bg-zinc-750'
+    default:         return 'border border-zinc-700/60 bg-[#0d1424] text-zinc-100 hover:border-blue-400/60 hover:bg-blue-900/10'
   }
+}
+
+function tileKey(id, type) {
+  return `${id}-${type}`
+}
+
+// ── Position generator ─────────────────────────────────────────────────────────
+
+function generatePositions(tiles) {
+  const pos = {}
+  const placed = []
+  for (const tile of tiles) {
+    const key = tileKey(tile.id, tile.type)
+    let x, y, attempts = 0
+    do {
+      x = 2 + Math.random() * 73
+      y = 2 + Math.random() * 78
+      attempts++
+    } while (attempts < 60 && placed.some(p => Math.abs(p.x - x) < 16 && Math.abs(p.y - y) < 14))
+    placed.push({ x, y })
+    pos[key] = { x, y }
+  }
+  return pos
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -51,40 +75,39 @@ export default function Match() {
 
   const totalCards = set?.cards?.length ?? 0
 
-  // roundCount: how many cards to use this round (scales up on success)
   const [roundCount, setRoundCount] = useState(() => Math.min(8, totalCards))
 
   // Session state
-  const [round, setRound] = useState(null)           // { terms, defs }
-  const [termStates, setTermStates]   = useState({}) // id → tile state string
-  const [defStates, setDefStates]     = useState({}) // id → tile state string
-  const [selectedTerm, setSelectedTerm] = useState(null) // id or null
+  const [round, setRound] = useState(null)          // { tiles, count }
+  const [tileStates, setTileStates] = useState({})  // key → 'default'|'selected'|'matched'|'wrong'
+  const [selected, setSelected] = useState(null)    // { id, type, key } or null
   const [matchedCount, setMatchedCount] = useState(0)
   const [mistakes, setMistakes] = useState(0)
   const [elapsed, setElapsed] = useState(0)
-  const [phase, setPhase] = useState('playing')      // 'playing' | 'results'
+  const [phase, setPhase] = useState('playing')     // 'playing' | 'results'
 
-  // Refs — stable, never in deps
   const hasMarkedStudied = useRef(false)
   const timerRef = useRef(null)
-  const roundCardCount = useRef(0) // how many pairs in current round
+  const roundCardCount = useRef(0)
+
+  // Positions — regenerated each time `round` changes
+  const positions = useMemo(() => {
+    if (!round) return {}
+    return generatePositions(round.tiles)
+  }, [round])
 
   // ── Start a new round ───────────────────────────────────────────────────────
 
   function startRound(count) {
     const newRound = buildRound(set.cards, count)
-    roundCardCount.current = newRound.terms.length
+    roundCardCount.current = newRound.count
 
-    // Initialise all tiles to 'default'
-    const termInit = {}
-    const defInit  = {}
-    newRound.terms.forEach(t => { termInit[t.id] = 'default' })
-    newRound.defs.forEach(d  => { defInit[d.id]  = 'default' })
+    const initStates = {}
+    newRound.tiles.forEach(t => { initStates[tileKey(t.id, t.type)] = 'default' })
 
     setRound(newRound)
-    setTermStates(termInit)
-    setDefStates(defInit)
-    setSelectedTerm(null)
+    setTileStates(initStates)
+    setSelected(null)
     setMatchedCount(0)
     setMistakes(0)
     setElapsed(0)
@@ -92,19 +115,15 @@ export default function Match() {
   }
 
   // ── Initialise first round on mount ────────────────────────────────────────
-  // READ: set (via set?.cards?.length primitive), roundCount
-  // SET: startRound() sets multiple states — none of those go in deps here
-  // Guard: round === null ensures this runs exactly once on mount
+
   useEffect(() => {
     if (round !== null) return
     if (!set || totalCards === 0) return
     startRound(Math.min(8, totalCards))
   }, [totalCards]) // eslint-disable-line react-hooks/exhaustive-deps
-  // `set` and `totalCards` are stable after first load; startRound is a plain function
 
-  // ── Timer: count up while playing ──────────────────────────────────────────
-  // READ: phase
-  // SET: elapsed — NOT in deps
+  // ── Timer ───────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (phase !== 'playing') {
       clearInterval(timerRef.current)
@@ -116,7 +135,7 @@ export default function Match() {
     return () => clearInterval(timerRef.current)
   }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Early guard: invalid set ────────────────────────────────────────────────
+  // ── Early guard ─────────────────────────────────────────────────────────────
 
   if (!set || totalCards === 0) {
     return (
@@ -134,76 +153,63 @@ export default function Match() {
 
   if (!round) return null
 
-  // ── Interaction handlers ────────────────────────────────────────────────────
+  // ── Tile click handler (symmetric — works for term or def first) ────────────
 
-  function handleTermClick(termId) {
+  function handleTileClick(tileId, type) {
     if (phase !== 'playing') return
-    if (termStates[termId] === 'matched') return
+    const key = tileKey(tileId, type)
+    if (tileStates[key] === 'matched') return
 
-    // Click already-selected term → deselect
-    if (selectedTerm === termId) {
-      setSelectedTerm(null)
-      setTermStates(prev => ({ ...prev, [termId]: 'default' }))
+    // Deselect if clicking same tile again
+    if (selected && selected.key === key) {
+      setTileStates(prev => ({ ...prev, [key]: 'default' }))
+      setSelected(null)
       return
     }
 
-    // Deselect previous term (if any), select new one
-    setTermStates(prev => {
-      const next = { ...prev }
-      if (selectedTerm !== null) next[selectedTerm] = 'default'
-      next[termId] = 'selected'
-      return next
-    })
-    setSelectedTerm(termId)
-  }
+    // If no selection yet, select this tile
+    if (!selected) {
+      setTileStates(prev => ({ ...prev, [key]: 'selected' }))
+      setSelected({ id: tileId, type, key })
+      return
+    }
 
-  function handleDefClick(defId) {
-    if (phase !== 'playing') return
-    if (defStates[defId] === 'matched') return
-    if (selectedTerm === null) return
+    // If same type as selected, switch selection to this tile
+    if (selected.type === type) {
+      setTileStates(prev => ({ ...prev, [selected.key]: 'default', [key]: 'selected' }))
+      setSelected({ id: tileId, type, key })
+      return
+    }
 
-    const isMatch = selectedTerm === defId
+    // Different type — check for a match
+    const isMatch = selected.id === tileId
 
     if (isMatch) {
-      // ✅ Correct
       const newMatchedCount = matchedCount + 1
-
-      setTermStates(prev => ({ ...prev, [selectedTerm]: 'matched' }))
-      setDefStates(prev  => ({ ...prev, [defId]:        'matched' }))
-      setSelectedTerm(null)
+      setTileStates(prev => ({ ...prev, [selected.key]: 'matched', [key]: 'matched' }))
+      setSelected(null)
       setMatchedCount(newMatchedCount)
 
-      // Check round complete
       if (newMatchedCount === roundCardCount.current) {
         clearInterval(timerRef.current)
         setPhase('results')
-
-        // markStudied exactly once per session
         if (!hasMarkedStudied.current) {
           markStudied(id)
           hasMarkedStudied.current = true
         }
       }
     } else {
-      // ❌ Wrong — flash both red for 600ms then reset
-      setTermStates(prev => ({ ...prev, [selectedTerm]: 'wrong' }))
-      setDefStates(prev  => ({ ...prev, [defId]:        'wrong' }))
+      const prevKey = selected.key
+      setTileStates(prev => ({ ...prev, [prevKey]: 'wrong', [key]: 'wrong' }))
       setMistakes(prev => prev + 1)
-
-      const flashTerm = selectedTerm // capture for timeout closure
       setTimeout(() => {
-        setTermStates(prev => {
-          // Only reset if still 'wrong' (not matched since)
-          if (prev[flashTerm] === 'wrong') return { ...prev, [flashTerm]: 'default' }
-          return prev
-        })
-        setDefStates(prev => {
-          if (prev[defId] === 'wrong') return { ...prev, [defId]: 'default' }
-          return prev
-        })
+        setTileStates(prev => ({
+          ...prev,
+          ...(prev[prevKey] === 'wrong' ? { [prevKey]: 'default' } : {}),
+          ...(prev[key] === 'wrong' ? { [key]: 'default' } : {}),
+        }))
       }, 600)
-
-      setSelectedTerm(null)
+      setSelected(null)
     }
   }
 
@@ -239,7 +245,7 @@ export default function Match() {
 
       {/* Progress */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="flex-1 bg-zinc-800 rounded-full h-2 overflow-hidden">
+        <div className="flex-1 bg-[#0d1424] rounded-full h-2 overflow-hidden border border-blue-500/10">
           <div
             className="h-full bg-blue-500 transition-all duration-500 rounded-full"
             style={{ width: `${(matchedCount / roundCardCount.current) * 100}%` }}
@@ -250,61 +256,43 @@ export default function Match() {
         </span>
       </div>
 
-      {/* Board */}
-      <div className="grid grid-cols-2 gap-4 relative">
-        {/* Terms column */}
-        <div className="space-y-3">
-          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 text-center">Term</p>
-          {round.terms.map(tile => (
+      {/* Scattered board */}
+      <div className="relative w-full" style={{ height: '500px' }}>
+        {round.tiles.map(tile => {
+          const key = tileKey(tile.id, tile.type)
+          const pos = positions[key]
+          if (!pos) return null
+          const state = tileStates[key] ?? 'default'
+          return (
             <button
-              key={tile.id}
-              id={`term-${tile.id}`}
-              onClick={() => handleTermClick(tile.id)}
-              disabled={termStates[tile.id] === 'matched'}
+              key={key}
+              onClick={() => handleTileClick(tile.id, tile.type)}
+              disabled={state === 'matched'}
+              style={{
+                position: 'absolute',
+                left: `${pos.x}%`,
+                top: `${pos.y}%`,
+                minWidth: '120px',
+                maxWidth: '200px',
+              }}
               className={[
-                'w-full min-h-[68px] px-4 py-3 rounded-xl text-sm font-medium text-left',
+                'px-4 py-3 rounded-xl text-sm font-medium text-left',
                 'transition-all duration-150 cursor-pointer',
-                tileClass(termStates[tile.id] ?? 'default'),
+                tileClass(state),
               ].join(' ')}
             >
               {tile.text}
             </button>
-          ))}
-        </div>
-
-        {/* Definitions column */}
-        <div className="space-y-3">
-          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 text-center">Definition</p>
-          {round.defs.map(tile => (
-            <button
-              key={tile.id}
-              id={`def-${tile.id}`}
-              onClick={() => handleDefClick(tile.id)}
-              disabled={defStates[tile.id] === 'matched'}
-              className={[
-                'w-full min-h-[68px] px-4 py-3 rounded-xl text-sm font-medium text-left',
-                'transition-all duration-150',
-                selectedTerm !== null && defStates[tile.id] !== 'matched'
-                  ? 'cursor-pointer'
-                  : defStates[tile.id] === 'matched'
-                  ? 'cursor-default'
-                  : 'cursor-default opacity-60',
-                tileClass(defStates[tile.id] ?? 'default'),
-              ].join(' ')}
-            >
-              {tile.text}
-            </button>
-          ))}
-        </div>
+          )
+        })}
 
         {/* Results overlay */}
         {phase === 'results' && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="bg-zinc-900/95 backdrop-blur-md border border-zinc-700 rounded-2xl p-8 shadow-2xl text-center max-w-sm w-full mx-4">
+            <div className="bg-[#0a0f1e]/95 backdrop-blur-md border border-blue-500/20 rounded-2xl p-8 shadow-2xl text-center max-w-sm w-full mx-4">
               <p className="text-3xl mb-3">✅</p>
               <h2 className="text-2xl font-bold text-zinc-100 mb-1">Round Complete!</h2>
 
-              {/* Stars */}
               <div className="flex justify-center gap-1 my-4 text-3xl">
                 {[1, 2, 3].map(n => (
                   <span key={n} className={n <= stars ? 'opacity-100' : 'opacity-20'}>
@@ -313,7 +301,6 @@ export default function Match() {
                 ))}
               </div>
 
-              {/* Stats */}
               <div className="space-y-1 mb-6 text-sm">
                 <p className="text-zinc-300">
                   <span className="text-zinc-500">Time: </span>
@@ -334,7 +321,6 @@ export default function Match() {
                 )}
               </div>
 
-              {/* Action buttons */}
               <div className="flex flex-col gap-3">
                 <button
                   id="next-round-btn"
@@ -356,15 +342,15 @@ export default function Match() {
         )}
       </div>
 
-      {/* Hint text when no term selected */}
-      {phase === 'playing' && selectedTerm === null && matchedCount < roundCardCount.current && (
-        <p className="text-center text-xs text-zinc-600 mt-6">
-          Click a <span className="text-zinc-400">term</span> to get started
+      {/* Hint text */}
+      {phase === 'playing' && !selected && matchedCount < roundCardCount.current && (
+        <p className="text-center text-xs text-zinc-600 mt-4">
+          Click any card to get started
         </p>
       )}
-      {phase === 'playing' && selectedTerm !== null && (
-        <p className="text-center text-xs text-blue-400 mt-6">
-          Now click the matching definition →
+      {phase === 'playing' && selected && (
+        <p className="text-center text-xs text-blue-400 mt-4">
+          Now click the matching {selected.type === 'term' ? 'definition' : 'term'} →
         </p>
       )}
     </main>
