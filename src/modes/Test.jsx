@@ -239,24 +239,34 @@ export default function Test() {
         </div>
 
         <div className="bg-zinc-800 rounded-xl p-6 space-y-8 mb-8">
-          {/* Number of questions slider */}
+          {/* Number of questions slider + number input */}
           <div>
-            <h2 className="text-lg font-semibold text-zinc-100 mb-1">Number of Questions</h2>
-            <p className="text-zinc-400 text-sm mb-3">{settings.questionCount} questions</p>
-            <input
-              type="range"
-              min={Math.min(5, totalCards)}
-              max={totalCards}
-              value={settings.questionCount}
-              onChange={e =>
-                setSettings(prev => ({ ...prev, questionCount: parseInt(e.target.value, 10) }))
-              }
-              className="w-full accent-indigo-500"
-            />
-            <div className="flex justify-between text-xs text-zinc-500 mt-1">
-              <span>{Math.min(5, totalCards)}</span>
-              <span>{totalCards}</span>
+            <h2 className="text-lg font-semibold text-zinc-100 mb-3">Number of Questions</h2>
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min={1}
+                max={totalCards}
+                value={settings.questionCount}
+                onChange={e =>
+                  setSettings(prev => ({ ...prev, questionCount: Number(e.target.value) }))
+                }
+                className="flex-1 accent-indigo-500"
+              />
+              <input
+                type="number"
+                min={1}
+                max={totalCards}
+                step={1}
+                value={settings.questionCount}
+                onChange={e => {
+                  const val = Math.min(totalCards, Math.max(1, Number(e.target.value) || 1))
+                  setSettings(prev => ({ ...prev, questionCount: val }))
+                }}
+                className="w-20 text-center bg-zinc-700 text-white border border-zinc-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
             </div>
+            <p className="text-zinc-500 text-xs mt-2">{settings.questionCount} question{settings.questionCount !== 1 ? 's' : ''} · 1 – {totalCards}</p>
           </div>
 
           {/* Question types checkboxes */}
