@@ -1,1 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap');
+
 @import "tailwindcss";
+
+:root {
+  --bg-base: #08070f;
+  --bg-surface: #100f1a;
+  --bg-card: rgba(255,255,255,0.04);
+  --accent: #7c3aed;
+  --accent-light: #a78bfa;
+  --accent-dark: #4c1d95;
+  --border-subtle: rgba(167,139,250,0.15);
+  --border-hover: rgba(167,139,250,0.4);
+  --glow: 0 0 40px rgba(124,58,237,0.15);
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background-color: var(--bg-base);
+}
+
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--glow);
+}
+
+.ff-heading {
+  font-family: 'Syne', sans-serif;
+}
+
+.card-scene { perspective: 1200px; }
+.card-inner { transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); transform-style: preserve-3d; }
+.card-inner.flipped { transform: rotateY(180deg); }
+.card-face { backface-visibility: hidden; }
+.card-back { transform: rotateY(180deg); }

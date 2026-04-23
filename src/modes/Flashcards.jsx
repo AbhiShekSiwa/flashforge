@@ -83,111 +83,115 @@ export default function Flashcards() {
 
   if (!set || total === 0) {
     return (
-      <main className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <p className="text-zinc-400 mb-4">{!set ? 'Set not found.' : 'This set has no cards.'}</p>
-        <button
-          onClick={() => navigate('/')}
-          className="h-10 px-4 rounded-lg bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors font-medium text-sm"
-        >
-          Back to My Sets
-        </button>
-      </main>
+      <div className="bg-[#08070f] min-h-screen">
+        <main className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <p className="text-zinc-400 mb-4">{!set ? 'Set not found.' : 'This set has no cards.'}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="h-10 px-4 rounded-lg bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors font-medium text-sm"
+          >
+            Back to My Sets
+          </button>
+        </main>
+      </div>
     )
   }
 
   if (done) {
     return (
-      <main className="max-w-2xl mx-auto px-4 py-16 flex flex-col items-center text-center">
-        <p className="text-5xl mb-4">🎉</p>
-        <h1 className="text-2xl font-bold text-zinc-100 mb-2">
-          You've reviewed all {total} cards!
-        </h1>
-        <div className="flex gap-3 mt-8">
+      <div className="bg-[#08070f] min-h-screen">
+        <main className="max-w-2xl mx-auto px-4 py-16 flex flex-col items-center text-center">
+          <p className="text-5xl mb-4">🎉</p>
+          <h1 className="text-2xl font-bold text-white mb-2">
+            You've reviewed all {total} cards!
+          </h1>
+          <div className="flex gap-3 mt-8">
+            <button
+              onClick={studyAgain}
+              className="h-10 px-5 rounded-lg border border-[rgba(167,139,250,0.3)] text-[#a78bfa] hover:bg-violet-900/20 transition-colors font-medium text-sm"
+            >
+              Study Again
+            </button>
+            <button
+              onClick={shuffleAndRestart}
+              className="h-10 px-5 rounded-lg bg-violet-600 text-white hover:bg-violet-500 transition-colors font-medium text-sm shadow-lg shadow-violet-900/40"
+            >
+              Shuffle & Restart
+            </button>
+          </div>
           <button
-            onClick={studyAgain}
-            className="h-10 px-5 rounded-lg bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors font-medium text-sm"
+            onClick={() => navigate(-1)}
+            className="mt-6 text-sm text-[#a78bfa]/50 hover:text-[#a78bfa] transition-colors"
           >
-            Study Again
+            ← Back to Set
           </button>
-          <button
-            onClick={shuffleAndRestart}
-            className="h-10 px-5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium text-sm"
-          >
-            Shuffle & Restart
-          </button>
-        </div>
-        <button
-          onClick={() => navigate(-1)}
-          className="mt-6 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-        >
-          ← Back to Set
-        </button>
-      </main>
+        </main>
+      </div>
     )
   }
 
   return (
-    <main className="max-w-2xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-        >
-          ← Back
-        </button>
-        <span className="text-sm font-medium text-zinc-300">
-          {currentPos + 1} / {total}
-        </span>
-        <button
-          onClick={toggleShuffle}
-          className={`h-8 px-3 rounded-lg text-sm font-medium transition-colors ${
-            isShuffled
-              ? 'bg-indigo-600 text-white'
-              : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+    <div className="bg-[#08070f] min-h-screen">
+      <main className="max-w-2xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-sm text-[#a78bfa]/70 hover:text-[#a78bfa] transition-colors"
+          >
+            ← Back
+          </button>
+          <span className="text-sm font-medium text-zinc-300">
+            {currentPos + 1} / {total}
+          </span>
+          <button
+            onClick={toggleShuffle}
+            className={`h-8 px-3 rounded-lg text-sm font-medium transition-colors border border-[rgba(167,139,250,0.3)] text-[#a78bfa] text-sm px-3 py-1.5 rounded-lg hover:bg-violet-900/20 ${
+              isShuffled ? 'bg-violet-900/20' : ''
+            }`}
+          >
+            🔀 Shuffle
+          </button>
+        </div>
+
+        <ProgressBar value={(currentPos + 1) / total} />
+
+        <div
+          className={`mt-6 mb-4 rounded-2xl transition-shadow duration-200 ${
+            isStarred ? 'ring-2 ring-yellow-400' : ''
           }`}
         >
-          🔀 Shuffle
-        </button>
-      </div>
+          <FlipCard
+            key={currentPos}
+            front={currentItem.card.term}
+            back={currentItem.card.definition}
+          />
+        </div>
 
-      <ProgressBar value={(currentPos + 1) / total} />
-
-      <div
-        className={`mt-6 mb-4 rounded-2xl transition-shadow duration-200 ${
-          isStarred ? 'ring-2 ring-yellow-400' : ''
-        }`}
-      >
-        <FlipCard
-          key={currentPos}
-          front={currentItem.card.term}
-          back={currentItem.card.definition}
-        />
-      </div>
-
-      <div className="flex items-center justify-between mt-4">
-        <button
-          onClick={goPrev}
-          disabled={currentPos === 0}
-          className="h-10 px-4 rounded-lg bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors font-medium text-sm disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          ← Prev
-        </button>
-        <button
-          onClick={toggleStar}
-          className={`text-2xl leading-none transition-colors ${
-            isStarred ? 'text-yellow-400' : 'text-zinc-600 hover:text-zinc-400'
-          }`}
-          aria-label="Star this card"
-        >
-          {isStarred ? '★' : '☆'}
-        </button>
-        <button
-          onClick={goNext}
-          className="h-10 px-4 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors font-medium text-sm"
-        >
-          {isLast ? 'Finish' : 'Next →'}
-        </button>
-      </div>
-    </main>
+        <div className="flex items-center justify-between mt-4">
+          <button
+            onClick={goPrev}
+            disabled={currentPos === 0}
+            className="border border-[rgba(167,139,250,0.3)] text-[#a78bfa] hover:bg-violet-900/20 px-6 py-2.5 rounded-xl transition-all font-medium text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            ← Prev
+          </button>
+          <button
+            onClick={toggleStar}
+            className={`text-2xl leading-none transition-colors ${
+              isStarred ? 'text-[#a78bfa]' : 'text-zinc-600 hover:text-zinc-400'
+            }`}
+            aria-label="Star this card"
+          >
+            {isStarred ? '★' : '☆'}
+          </button>
+          <button
+            onClick={goNext}
+            className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-violet-900/40 text-sm"
+          >
+            {isLast ? 'Finish' : 'Next →'}
+          </button>
+        </div>
+      </main>
+    </div>
   )
 }

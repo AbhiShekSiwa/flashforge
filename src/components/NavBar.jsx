@@ -26,36 +26,36 @@ export default function NavBar() {
   const modeLabel = modeSlug ? MODE_LABELS[modeSlug] ?? modeSlug : null
 
   return (
-    <nav className="sticky top-0 z-50 bg-zinc-800 border-b border-zinc-700">
+    <nav className="sticky top-0 z-50 backdrop-blur-md bg-[#08070f]/80 border-b border-[rgba(167,139,250,0.15)]">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="text-xl font-bold text-indigo-400 tracking-tight">
+        <Link to="/" className="text-xl tracking-tight text-white ff-heading" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800 }}>
           FlashForge
         </Link>
 
         <div className="flex items-center gap-2 text-sm">
           {set ? (
             <>
-              <Link to="/" className="text-zinc-400 hover:text-zinc-100 transition-colors">
+              <Link to="/" className="text-[#a78bfa]/70 hover:text-[#a78bfa] transition-colors">
                 My Sets
               </Link>
-              <span className="text-zinc-600">›</span>
+              <span className="text-[#a78bfa]/30">›</span>
               <Link
                 to={`/sets/${id}`}
-                className={`transition-colors ${modeLabel ? 'text-zinc-400 hover:text-zinc-100' : 'text-zinc-100'}`}
+                className={`transition-colors ${modeLabel ? 'text-[#a78bfa]/70 hover:text-[#a78bfa]' : 'text-white'}`}
               >
                 {set.name}
               </Link>
               {modeLabel && (
                 <>
-                  <span className="text-zinc-600">›</span>
-                  <span className="text-zinc-100">{modeLabel}</span>
+                  <span className="text-[#a78bfa]/30">›</span>
+                  <span className="text-white">{modeLabel}</span>
                 </>
               )}
             </>
           ) : (
             <Link
               to="/"
-              className="text-zinc-400 hover:text-zinc-100 transition-colors"
+              className="text-[#a78bfa]/70 hover:text-[#a78bfa] transition-colors"
             >
               My Sets
             </Link>

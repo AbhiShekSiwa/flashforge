@@ -17,9 +17,9 @@ export default function ProgressBar({ value, label, color = 'indigo' }) {
           <span>{Math.round(pct)}%</span>
         </div>
       )}
-      <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
+      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
         <div
-          className={`h-full ${barColor} rounded-full transition-all duration-300`}
+          className="h-full bg-[#7c3aed] rounded-full transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>

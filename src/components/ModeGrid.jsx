@@ -19,11 +19,13 @@ export default function ModeGrid() {
         <button
           key={key}
           onClick={() => navigate(`/sets/${id}/${key}`)}
-          className="group flex flex-col items-center gap-2 rounded-xl bg-zinc-800 border border-zinc-700 p-6 hover:bg-indigo-600 hover:border-indigo-500 transition-all duration-200"
+          className="glass-card group flex flex-col items-start gap-2 p-6 hover:scale-[1.03] text-left"
         >
-          <span className="text-3xl">{icon}</span>
-          <span className="text-sm font-medium text-zinc-200 group-hover:text-white">{label}</span>
-          <span className="text-xs text-zinc-400 group-hover:text-indigo-200">{desc}</span>
+          <div className="w-12 h-12 rounded-xl bg-violet-900/30 flex items-center justify-center text-2xl mb-3 border border-violet-500/20">
+            {icon}
+          </div>
+          <span className="text-sm font-semibold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>{label}</span>
+          <span className="text-xs text-[#a78bfa]/50">{desc}</span>
         </button>
       ))}
     </div>

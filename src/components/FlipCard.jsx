@@ -28,18 +28,18 @@ export default function FlipCard({ front, back }) {
         }}
       >
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-zinc-800 border border-zinc-700 p-8 text-center"
-          style={{ backfaceVisibility: 'hidden' }}
+          className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl glass-card p-8 text-center"
+          style={{ backfaceVisibility: 'hidden', boxShadow: '0 0 60px rgba(124,58,237,0.2)' }}
         >
-          <p className="text-2xl font-semibold text-zinc-100">{front}</p>
-          <p className="absolute bottom-4 text-xs text-zinc-500">Click to flip</p>
+          <p className="text-2xl font-semibold text-white ff-heading" style={{ fontFamily: "'Syne', sans-serif" }}>{front}</p>
+          <p className="absolute bottom-4 text-xs text-[#a78bfa]/40">Click to flip</p>
         </div>
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-zinc-800 border border-indigo-500/40 p-8 text-center"
-          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+          className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl glass-card p-8 text-center"
+          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', boxShadow: '0 0 60px rgba(124,58,237,0.2)' }}
         >
-          <p className="text-2xl font-semibold text-zinc-100">{back}</p>
-          <p className="absolute bottom-4 text-xs text-zinc-500">Click to flip</p>
+          <p className="text-2xl font-semibold text-white">{back}</p>
+          <p className="absolute bottom-4 text-xs text-[#a78bfa]/40">Click to flip</p>
         </div>
       </div>
     </div>
