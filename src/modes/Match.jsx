@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useSets } from '../hooks/useSets.js'
 import { shuffle } from '../utils/shuffle.js'
@@ -48,21 +48,35 @@ function tileKey(id, type) {
 
 // ── Position generator ─────────────────────────────────────────────────────────
 
-function generatePositions(tiles) {
-  const pos = {}
-  const placed = []
-  for (const tile of tiles) {
-    const key = tileKey(tile.id, tile.type)
-    let x, y, attempts = 0
-    do {
-      x = 2 + Math.random() * 73
-      y = 2 + Math.random() * 78
-      attempts++
-    } while (attempts < 60 && placed.some(p => Math.abs(p.x - x) < 16 && Math.abs(p.y - y) < 14))
-    placed.push({ x, y })
-    pos[key] = { x, y }
+function generatePositions(count, containerWidth = 900) {
+  const positions = []
+  const cardW = 180
+  const cardH = 60
+  const minDist = 170
+  const maxX = containerWidth - cardW - 10
+  const maxY = 400
+
+  for (let i = 0; i < count; i++) {
+    let placed = false
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const x = 10 + Math.random() * (maxX - 10)
+      const y = 10 + Math.random() * (maxY - 10)
+      const tooClose = positions.some(p =>
+        Math.abs(p.x - x) < minDist && Math.abs(p.y - y) < (cardH + 20)
+      )
+      if (!tooClose) {
+        positions.push({ x, y })
+        placed = true
+        break
+      }
+    }
+    if (!placed) {
+      const col = i % 3
+      const row = Math.floor(i / 3)
+      positions.push({ x: 10 + col * 200, y: 10 + row * 90 })
+    }
   }
-  return pos
+  return positions
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -89,12 +103,21 @@ export default function Match() {
   const hasMarkedStudied = useRef(false)
   const timerRef = useRef(null)
   const roundCardCount = useRef(0)
+  const containerRef = useRef(null)
 
-  // Positions — regenerated each time `round` changes
-  const positions = useMemo(() => {
-    if (!round) return {}
-    return generatePositions(round.tiles)
-  }, [round])
+  // Positions — regenerated each time `round` changes (pixel-based)
+  // READ: round; SET: positions (not in deps)
+  const [positions, setPositions] = useState({})
+  useEffect(() => {
+    if (!round) return
+    const containerWidth = containerRef.current?.clientWidth || 900
+    const posArray = generatePositions(round.tiles.length, containerWidth)
+    const posMap = {}
+    round.tiles.forEach((tile, i) => {
+      posMap[tileKey(tile.id, tile.type)] = posArray[i]
+    })
+    setPositions(posMap)
+  }, [round]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Start a new round ───────────────────────────────────────────────────────
 
@@ -257,7 +280,7 @@ export default function Match() {
       </div>
 
       {/* Scattered board */}
-      <div className="relative w-full" style={{ height: '500px' }}>
+      <div ref={containerRef} className="relative w-full" style={{ height: '500px' }}>
         {round.tiles.map(tile => {
           const key = tileKey(tile.id, tile.type)
           const pos = positions[key]
@@ -270,8 +293,8 @@ export default function Match() {
               disabled={state === 'matched'}
               style={{
                 position: 'absolute',
-                left: `${pos.x}%`,
-                top: `${pos.y}%`,
+                left: `${pos.x}px`,
+                top: `${pos.y}px`,
                 minWidth: '120px',
                 maxWidth: '200px',
               }}
